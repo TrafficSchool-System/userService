@@ -1,7 +1,10 @@
 package com.example.userService.Dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class VerifyTokenRequestDTO {
 
+    @NotBlank(message = "Token får inte vara tom")
     private String token;
 
     public VerifyTokenRequestDTO() {}

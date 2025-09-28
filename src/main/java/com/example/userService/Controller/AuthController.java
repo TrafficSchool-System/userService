@@ -16,6 +16,8 @@ import com.example.userService.Dto.UserResponseDTO;
 import com.example.userService.Dto.VerifyTokenRequestDTO;
 import com.example.userService.Service.AuthServiceInterface;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
@@ -26,7 +28,7 @@ public class AuthController {
 
     // Skicka magic link via email
     @PostMapping("/login")
-    public ResponseEntity<String> sendMagicLink(@RequestBody LoginRequestDTO request) {
+    public ResponseEntity<String> sendMagicLink(@Valid @RequestBody LoginRequestDTO request) {
 
         //Service kastar UserNotFoundException om användare inte finns
         authService.createMagicLink(request); 
@@ -36,7 +38,7 @@ public class AuthController {
 
     // Verifiera magic link token
     @PostMapping("/verify")
-    public ResponseEntity<UserResponseDTO> verifyMagicLink(@RequestBody VerifyTokenRequestDTO request) {
+    public ResponseEntity<UserResponseDTO> verifyMagicLink(@Valid @RequestBody VerifyTokenRequestDTO request) {
 
         // Service kastar UserNotFoundException om användare inte finns
         UserResponseDTO user = authService.verifyMagicLink(request);
@@ -49,7 +51,7 @@ public class AuthController {
 
     //Verifera magic link och få JWT token 
     @PostMapping("/verify-jwt")
-    public ResponseEntity<JwtResponseDTO> verifyMagicLinkWithJwt(@RequestBody VerifyTokenRequestDTO request){
+    public ResponseEntity<JwtResponseDTO> verifyMagicLinkWithJwt(@Valid @RequestBody VerifyTokenRequestDTO request){
 
         // Service kastar exceptions om något går fel
         JwtResponseDTO jwtResponse = authService.verifyMagicLinkWithJwt(request); 
