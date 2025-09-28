@@ -15,6 +15,8 @@ import com.example.userService.Dto.RegisterRequestDTO;
 import com.example.userService.Dto.UserResponseDTO;
 import com.example.userService.Service.UserServiceInterface;
 
+import jakarta.validation.Valid;
+
 @RestController // Säger till Spring att detta är en REST API
 @RequestMapping("/api/users") // Bas URL
 @CrossOrigin(origins = "*") // Tillåter requests från alla origins (för utveckling)
@@ -25,7 +27,7 @@ public class UserController {
     
     // Registrera en ny användare
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> registerUser(@RequestBody RegisterRequestDTO request){
+    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody RegisterRequestDTO request){
         
         //Service kastar EmailAllreadyExistsException om email redan finns
         UserResponseDTO user = userService.registerUser(request); 
@@ -35,7 +37,7 @@ public class UserController {
 
     //Hämta användare med ID
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id){
+    public ResponseEntity<UserResponseDTO> getUserById(@Valid @PathVariable Long id){
         
         //Service kastar UserNotFoundException om användaren inte finns
         UserResponseDTO user = userService.findById(id); 
@@ -45,7 +47,7 @@ public class UserController {
 
     //Hämta användare med email (för admin)
     @GetMapping("/email/{email}")
-    public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email){
+    public ResponseEntity<UserResponseDTO> getUserByEmail(@Valid @PathVariable String email){
 
         //Service kastar fel om email inte finns 
         UserResponseDTO user = userService.findByEmail(email); 

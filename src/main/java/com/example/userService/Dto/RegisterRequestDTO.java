@@ -1,9 +1,18 @@
 package com.example.userService.Dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 public class RegisterRequestDTO {
 
+    @NotBlank(message = "E-psoten får inte vara tom")
+    @Email(message = "E-posten måste vara giltig")
     private String email; 
+
+    @NotBlank(message = "Namn får inte vara tom")
     private String firstName; 
+
+    @NotBlank(message = "Efternamn får inte vara tom")
     private String lastName; 
 
     public RegisterRequestDTO(){}
