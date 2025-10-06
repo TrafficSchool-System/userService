@@ -7,13 +7,13 @@ import com.example.userService.Dto.VerifyTokenRequestDTO;
 
 public interface AuthServiceInterface {
 
-    String createMagicLink(LoginRequestDTO request); 
+    String createMagicLink(LoginRequestDTO request);
 
-    UserResponseDTO verifyMagicLink(VerifyTokenRequestDTO request); 
+    UserResponseDTO verifyMagicLink(VerifyTokenRequestDTO request);
 
-    //Verifera magic link och retunera JWT token
-    JwtResponseDTO verifyMagicLinkWithJwt(VerifyTokenRequestDTO request); 
-    
-    void cleanupOldTokens(); 
+    // Verifera magic link och retunera JWT token
+    JwtResponseDTO verifyMagicLinkWithJwt(VerifyTokenRequestDTO request);
+
+    void cleanupOldTokens();
 
 }

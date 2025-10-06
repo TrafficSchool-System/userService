@@ -44,9 +44,6 @@ public class AuthController {
         UserResponseDTO user = authService.verifyMagicLink(request);
 
         return ResponseEntity.ok(user);
-
-
-       
     }
 
     //Verifera magic link och få JWT token 

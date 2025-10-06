@@ -21,86 +21,73 @@ public class AuthService implements AuthServiceInterface {
 
     @Autowired
     private LoginTokenRepository loginTokenRepository;
-    
+
     @Autowired
-    private UserServiceInterface userService; // <- Injicerar interface 
+    private UserServiceInterface userService; // <- Injicerar interface
 
     @Autowired
     private JwtUtil jwtUtil;
 
     @Override
     public String createMagicLink(LoginRequestDTO request) {
-        String email = request.getEmail(); 
+        String email = request.getEmail();
 
-        //AFFÄRSLOGIK: Kontrollera om användaren finns
+        // AFFÄRSLOGIK: Kontrollera om användaren finns
         if (!userService.emailExists(email)) {
             throw new UserNotFoundException("Användaren med email: " + email + " finns inte. Registrera dig först.");
-            
+
         }
 
-        //AFFÄRSLOGIK: Skapa unik Token
-        String token = UUID.randomUUID().toString(); 
+        // Skapa och spara token
+        return createTokenForEmail(email, 5); // Giltig i 5 min för befintliga användare
 
-        //AFFÄRSLOGIK: Token gäller i 5 minuter
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(5); 
-
-        //AFFÄRSLOGIK: Skapa LoginToken entity
-        LoginToken loginToken = new LoginToken(token, email, expiresAt); 
-
-        //AFFÄRSLOGIK: Spara Token i databasen
-        loginTokenRepository.save(loginToken); 
-
-        //AFFÄRSLOGIK: Retuner token (kommer skickas via email senare)
-        return token; 
     }
 
     @Override
     public UserResponseDTO verifyMagicLink(VerifyTokenRequestDTO request) {
-        String tokenString = request.getToken(); 
+        String tokenString = request.getToken();
 
-        //AFFÄRSLOGIK: Hitta token som inte är använd
+        // AFFÄRSLOGIK: Hitta token som inte är använd
         LoginToken loginToken = loginTokenRepository.findByTokenAndUsedFalse(tokenString)
-            .orElseThrow(() -> new InvalidTokenException("Ogiltig eller redan använd token"));
+                .orElseThrow(() -> new InvalidTokenException("Ogiltig eller redan använd token"));
 
-        //AFFÄRSLOGIK: Kontrollera om token har gått ut
+        // AFFÄRSLOGIK: Kontrollera om token har gått ut
         if (LocalDateTime.now().isAfter(loginToken.getExpiresAt())) {
             throw new InvalidTokenException("Token har gått utt, begär en ny magic link");
         }
 
-    
-        //AFFÄRSLOGIK: Kontrollera om token redan används(extra säkerhet)
+        // AFFÄRSLOGIK: Kontrollera om token redan används(extra säkerhet)
         if (loginToken.isUsed()) {
-            throw new InvalidTokenException("Token har redan används.");     
+            throw new InvalidTokenException("Token har redan används.");
         }
 
-        //AFFÄRSLOGIK: Markera token som använd(One time use)
+        // AFFÄRSLOGIK: Markera token som använd(One time use)
         loginToken.setUsed(true);
-        loginTokenRepository.save(loginToken); 
+        loginTokenRepository.save(loginToken);
 
-        //AFFÄRSLOGIK: Hitta användare som ska loggas in
+        // AFFÄRSLOGIK: Hitta användare som ska loggas in
         UserResponseDTO user = userService.findByEmail(loginToken.getEmail());
 
-        //AFFÄRSLOGIK: Retunera användardata (för frontend)
-        return user; 
+        // AFFÄRSLOGIK: Retunera användardata (för frontend)
+        return user;
     }
 
     @Override
     public JwtResponseDTO verifyMagicLinkWithJwt(VerifyTokenRequestDTO request) {
-        //AFFÄRSLOGIK: Använder befintlig verifyMagicLink logik
-        UserResponseDTO user = verifyMagicLink(request); 
+        // AFFÄRSLOGIK: Använder befintlig verifyMagicLink logik
+        UserResponseDTO user = verifyMagicLink(request);
 
-      
-            //AFFÄRSLOGIK: Generera JWT token för användare
-            String jwtToken = jwtUtil.generateToken(user.getEmail());
-            
-            //AFFÄRSLOGIK: Retunera både token och användarinfo
-            return new JwtResponseDTO(jwtToken, user);        
-        
+        // AFFÄRSLOGIK: Generera JWT token för användare
+        String jwtToken = jwtUtil.generateToken(user.getEmail());
+
+        // AFFÄRSLOGIK: Retunera både token och användarinfo
+        return new JwtResponseDTO(jwtToken, user);
+
     }
 
     @Override
     public void cleanupOldTokens() {
-        //AFFÄRSLOGIK: Rensa gamla tokens (implementeras senare)
+        // AFFÄRSLOGIK: Rensa gamla tokens (implementeras senare)
         LocalDateTime now = LocalDateTime.now();
 
         // loginTokenRepository.deleteExpiredAndUsedTokens(now);
@@ -108,5 +95,15 @@ public class AuthService implements AuthServiceInterface {
 
     }
 
-   
+    // PRIVAT HJÄLPMETOD: Skapar token för magic links (5 minuter)
+    private String createTokenForEmail(String email, int minutesValid) {
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(minutesValid);
+
+        LoginToken loginToken = new LoginToken(token, email, expiresAt);
+        loginTokenRepository.save(loginToken);
+
+        return token;
+    }
+
 }
