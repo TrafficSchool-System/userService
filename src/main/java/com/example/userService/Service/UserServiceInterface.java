@@ -12,6 +12,9 @@ public interface UserServiceInterface {
     // UserResponseDTO som representerar den registrerade användaren (och inte hela entitetsklassen)
     UserResponseDTO registerUser(RegisterRequestDTO request);
 
+    //Ny metod: Registrera användare och skicka välkomstbrev
+    UserResponseDTO registerUserWithWelcomeEmail(RegisterRequestDTO request); 
+
         //Hämtar en användare baserat på email
     //Email den mail addressen som ska sökas efter
     //UserResponseDTO med användarens information. Eller null eception om inget hittas

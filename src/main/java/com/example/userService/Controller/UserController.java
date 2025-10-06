@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.userService.Dto.RegisterRequestDTO;
 import com.example.userService.Dto.UserResponseDTO;
+import com.example.userService.Service.AuthServiceInterface;
+import com.example.userService.Service.EmailServiceInterface;
 import com.example.userService.Service.UserServiceInterface;
 
 import jakarta.validation.Valid;
@@ -24,13 +26,19 @@ public class UserController {
 
     @Autowired
     private UserServiceInterface userService;
+
+    @Autowired
+    private AuthServiceInterface authService;
+
+    @Autowired
+    private EmailServiceInterface emailService;
     
     // Registrera en ny användare
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody RegisterRequestDTO request){
         
         //Service kastar EmailAllreadyExistsException om email redan finns
-        UserResponseDTO user = userService.registerUser(request); 
+        UserResponseDTO user = userService.registerUserWithWelcomeEmail(request); 
 
         return ResponseEntity.status(HttpStatus.CREATED).body(user); 
     }
