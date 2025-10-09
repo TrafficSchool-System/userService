@@ -66,8 +66,9 @@ public class UserService implements UserServiceInterface {
     private String createWelcomeToken(String email) {
         String token = UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(30);
+        LocalDateTime createdAt = LocalDateTime.now();
 
-        LoginToken loginToken = new LoginToken(token, email, expiresAt);
+        LoginToken loginToken = new LoginToken(token, email, expiresAt, createdAt);
         loginTokenRepository.save(loginToken);
 
         return token;
@@ -99,6 +100,23 @@ public class UserService implements UserServiceInterface {
         // AFFÄRSLOGIK: Retunera användaren om den finns
         return new UserResponseDTO(user);
 
+    }
+
+    @Override
+    public UserResponseDTO getCurrentUser(String email) {
+        //AFFÄRSLOGIK: Validera att email inte är null eller tomt
+
+        if (email == null || email.trim().isEmpty()) {
+            throw new UserNotFoundException("Email kan inte vara null eller tomt för att hämta aktuell användare");
+                        
+        }
+
+        // AFFÄRSLOGIK: Hämta användare - återanvänder befintlig metod
+        // Detta kastar UserNotFoundException om användaren inte finns
+        UserResponseDTO user = findByEmail(email);
+
+        return user; 
+        
     }
 
 }

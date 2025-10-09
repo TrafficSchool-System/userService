@@ -1,6 +1,7 @@
 package com.example.userService.Controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -21,7 +22,6 @@ import jakarta.validation.Valid;
 
 @RestController // Säger till Spring att detta är en REST API
 @RequestMapping("/api/users") // Bas URL
-@CrossOrigin(origins = "*") // Tillåter requests från alla origins (för utveckling)
 public class UserController {
 
     @Autowired
@@ -62,5 +62,15 @@ public class UserController {
 
         return ResponseEntity.ok(user); 
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> getCurrentUser(Authentication authentication) {
+        String email = authentication.getName(); 
+        UserResponseDTO user = userService.getCurrentUser(email); 
+
+        return ResponseEntity.ok(user); 
+    }
+
+    
 
 }

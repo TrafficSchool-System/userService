@@ -23,4 +23,7 @@ public interface UserServiceInterface {
     boolean emailExists (String email); 
 
     UserResponseDTO findById(Long id); 
+
+    //Hämta inloggad användares data baserat på JWT authentication 
+    UserResponseDTO getCurrentUser(String email); 
 }
