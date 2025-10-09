@@ -27,14 +27,22 @@ public class LoginToken {
     @Column(nullable = false)
     private boolean used = false; //Om token redan använts (en gång bara)
 
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now(); //När token skapades
+
     public LoginToken() {
     }
 
-    public LoginToken(String token, String email, LocalDateTime expiresAt) {
+    
+
+    public LoginToken(String token, String email, LocalDateTime expiresAt, LocalDateTime createdAt) {
         this.token = token;
         this.email = email;
         this.expiresAt = expiresAt;
+        this.createdAt = createdAt;
     }
+
+
 
     public Long getId() {
         return id;
@@ -76,11 +84,25 @@ public class LoginToken {
         this.used = used;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
     @Override
     public String toString() {
         return "LoginToken {id=" + id + ", token=" + token.substring(0, 8) + "...." + ", email=" + email + ", expiresAt=" + expiresAt + ", used="
                 + used + "}";
     }
+
+
+
+    
     
     
     

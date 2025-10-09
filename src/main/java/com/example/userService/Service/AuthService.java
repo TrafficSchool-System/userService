@@ -1,6 +1,7 @@
 package com.example.userService.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,9 @@ public class AuthService implements AuthServiceInterface {
     private UserServiceInterface userService; // <- Injicerar interface
 
     @Autowired
+    private EmailServiceInterface emmailService;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @Override
@@ -34,13 +38,38 @@ public class AuthService implements AuthServiceInterface {
 
         // AFFÄRSLOGIK: Kontrollera om användaren finns
         if (!userService.emailExists(email)) {
-            throw new UserNotFoundException("Användaren med email: " + email + " finns inte. Registrera dig först.");
+            throw new UserNotFoundException("Användaren med email: " + email + " finns inte. Registrera dig först!");
 
         }
 
-        // Skapa och spara token
-        return createTokenForEmail(email, 5); // Giltig i 5 min för befintliga användare
+        // Hitta alla aktiva tokens för denna mail
+        List<LoginToken> activeTokens = loginTokenRepository.findByEmailAndUsedFalse(email);
 
+        // Räkna tokens från senaste 15 minuterna (enkel rate limitng)
+        LocalDateTime fifteenMinutesAgo = LocalDateTime.now().minusMinutes(15);
+        long recentTokens = activeTokens.stream()
+                .filter(token -> token.getCreatedAt().isAfter(fifteenMinutesAgo))
+                .count();
+
+        if (recentTokens >= 3) {
+            throw new InvalidTokenException("För många inloggningsförsök. Försök igen om 15 minuter.");
+        }
+
+        // Ta bort ALLA gamla tokens (enkelt och effektivt)
+        if (!activeTokens.isEmpty()) {
+            loginTokenRepository.deleteByEmailAndUsedFalse(email);
+        }
+
+        // Hämta användarens namn för personligt email
+        UserResponseDTO user = userService.findByEmail(email);
+
+        // Skapa och spara token
+        String token = createTokenForEmail(email, 5); // Giltig i 5 min för befintliga användare
+
+        // Skicka länken till konsolen
+        emmailService.sendMagicLinkEmail(email, user.getFirstName(), token);
+
+        return token;
     }
 
     @Override
@@ -49,16 +78,16 @@ public class AuthService implements AuthServiceInterface {
 
         // AFFÄRSLOGIK: Hitta token som inte är använd
         LoginToken loginToken = loginTokenRepository.findByTokenAndUsedFalse(tokenString)
-                .orElseThrow(() -> new InvalidTokenException("Ogiltig eller redan använd token"));
+                .orElseThrow(() -> new InvalidTokenException("Ogiltig eller redan använd Länk"));
 
         // AFFÄRSLOGIK: Kontrollera om token har gått ut
         if (LocalDateTime.now().isAfter(loginToken.getExpiresAt())) {
-            throw new InvalidTokenException("Token har gått utt, begär en ny magic link");
+            throw new InvalidTokenException("Länk har gått utt, begär en ny länk");
         }
 
         // AFFÄRSLOGIK: Kontrollera om token redan används(extra säkerhet)
         if (loginToken.isUsed()) {
-            throw new InvalidTokenException("Token har redan används.");
+            throw new InvalidTokenException("Länk har redan används.");
         }
 
         // AFFÄRSLOGIK: Markera token som använd(One time use)
@@ -99,8 +128,9 @@ public class AuthService implements AuthServiceInterface {
     private String createTokenForEmail(String email, int minutesValid) {
         String token = UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(minutesValid);
+        LocalDateTime createdAt = LocalDateTime.now();
 
-        LoginToken loginToken = new LoginToken(token, email, expiresAt);
+        LoginToken loginToken = new LoginToken(token, email, expiresAt, createdAt);
         loginTokenRepository.save(loginToken);
 
         return token;
