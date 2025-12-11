@@ -26,4 +26,6 @@ public interface UserServiceInterface {
 
     //Hämta inloggad användares data baserat på JWT authentication 
     UserResponseDTO getCurrentUser(String email); 
+
+     
 }

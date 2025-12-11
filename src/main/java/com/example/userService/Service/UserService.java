@@ -88,7 +88,6 @@ public class UserService implements UserServiceInterface {
     public boolean emailExists(String email) {
         // AFFÄRSLOGIK: Enkelt check om email finns
         return userRepository.existsByEmail(email);
-
     }
 
     @Override

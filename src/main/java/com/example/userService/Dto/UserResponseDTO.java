@@ -1,6 +1,7 @@
 package com.example.userService.Dto;
 
 import com.example.userService.Entity.User;
+import com.example.userService.Enum.UserRole;
 
 public class UserResponseDTO {
 
@@ -9,6 +10,7 @@ public class UserResponseDTO {
     private String firstName; 
     private String lastName; 
     private boolean active;
+    private UserRole role; 
 
     public UserResponseDTO() {}
 
@@ -18,6 +20,7 @@ public class UserResponseDTO {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.active = user.getActive();
+        this.role = user.getRole();
     }
 
     public UserResponseDTO(Long id, String email, String firstName, String lastName, boolean active) {
@@ -68,6 +71,14 @@ public class UserResponseDTO {
         this.active = active;
     }
 
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+
     @Override
     public String toString() {
         return "UserResponse{" +
@@ -76,6 +87,7 @@ public class UserResponseDTO {
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", active=" + active +
+                ", role=" + role +
                 '}';
     }
 

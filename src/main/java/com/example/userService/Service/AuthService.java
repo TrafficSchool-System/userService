@@ -17,6 +17,8 @@ import com.example.userService.Exception.UserNotFoundException;
 import com.example.userService.Repository.LoginTokenRepository;
 import com.example.userService.Security.JwtUtil;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class AuthService implements AuthServiceInterface {
 
@@ -27,12 +29,13 @@ public class AuthService implements AuthServiceInterface {
     private UserServiceInterface userService; // <- Injicerar interface
 
     @Autowired
-    private EmailServiceInterface emmailService;
+    private EmailServiceInterface emailService;
 
     @Autowired
     private JwtUtil jwtUtil;
 
     @Override
+    @Transactional // Viktigt för att delete ska fungera
     public String createMagicLink(LoginRequestDTO request) {
         String email = request.getEmail();
 
@@ -42,23 +45,8 @@ public class AuthService implements AuthServiceInterface {
 
         }
 
-        // Hitta alla aktiva tokens för denna mail
-        List<LoginToken> activeTokens = loginTokenRepository.findByEmailAndUsedFalse(email);
-
-        // Räkna tokens från senaste 15 minuterna (enkel rate limitng)
-        LocalDateTime fifteenMinutesAgo = LocalDateTime.now().minusMinutes(15);
-        long recentTokens = activeTokens.stream()
-                .filter(token -> token.getCreatedAt().isAfter(fifteenMinutesAgo))
-                .count();
-
-        if (recentTokens >= 3) {
-            throw new InvalidTokenException("För många inloggningsförsök. Försök igen om 15 minuter.");
-        }
-
-        // Ta bort ALLA gamla tokens (enkelt och effektivt)
-        if (!activeTokens.isEmpty()) {
-            loginTokenRepository.deleteByEmailAndUsedFalse(email);
-        }
+        // Ta bort ALLA gamla oanvända tokens för denna email (enkelt och säkert)
+        loginTokenRepository.deleteByEmailAndUsedFalse(email);
 
         // Hämta användarens namn för personligt email
         UserResponseDTO user = userService.findByEmail(email);
@@ -67,7 +55,7 @@ public class AuthService implements AuthServiceInterface {
         String token = createTokenForEmail(email, 5); // Giltig i 5 min för befintliga användare
 
         // Skicka länken till konsolen
-        emmailService.sendMagicLinkEmail(email, user.getFirstName(), token);
+        emailService.sendMagicLinkEmail(email, user.getFirstName(), token);
 
         return token;
     }
@@ -106,21 +94,32 @@ public class AuthService implements AuthServiceInterface {
         // AFFÄRSLOGIK: Använder befintlig verifyMagicLink logik
         UserResponseDTO user = verifyMagicLink(request);
 
-        // AFFÄRSLOGIK: Generera JWT token för användare
-        String jwtToken = jwtUtil.generateToken(user.getEmail());
+        // AFFÄRSLOGIK: Generera JWT token med role och userId (BEST PRACTICE)
+        String jwtToken = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name(), // Konvertera enum till String
+                user.getId());
 
         // AFFÄRSLOGIK: Retunera både token och användarinfo
         return new JwtResponseDTO(jwtToken, user);
 
     }
 
+    // Används ej. Detta är en util metod. Kan schemalägga detta senare så att den
+    // rensar tokens från databasen.
     @Override
     public void cleanupOldTokens() {
         // AFFÄRSLOGIK: Rensa gamla tokens (implementeras senare)
         LocalDateTime now = LocalDateTime.now();
 
+        // Ta bort utgågna tokens
+        loginTokenRepository.deleteByExpiresAtBefore(now);
+
+        // Ta bort använda tokens
+        loginTokenRepository.deleteByUsedTrue();
+
         // loginTokenRepository.deleteExpiredAndUsedTokens(now);
-        System.out.println("Städning av gamla tokens - implementeras senare");
+        System.out.println("✅ Gamla tokens städade: " + now);
 
     }
 
