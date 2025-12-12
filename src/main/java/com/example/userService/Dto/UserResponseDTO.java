@@ -6,29 +6,31 @@ import com.example.userService.Enum.UserRole;
 public class UserResponseDTO {
 
     private Long id; 
-    private String email; 
     private String firstName; 
     private String lastName; 
+    private String email; 
     private boolean active;
     private UserRole role; 
 
     public UserResponseDTO() {}
 
-    public UserResponseDTO(User user){
-        this.id = user.getId();
-        this.email = user.getEmail();
-        this.firstName = user.getFirstName();
-        this.lastName = user.getLastName();
-        this.active = user.getActive();
-        this.role = user.getRole();
-    }
 
-    public UserResponseDTO(Long id, String email, String firstName, String lastName, boolean active) {
+    public UserResponseDTO(Long id, String firstName, String lastName, String email, boolean active, UserRole role) {
         this.id = id;
-        this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.email = email;
         this.active = active;
+        this.role = role; 
+    }
+
+    public UserResponseDTO(User user){
+        this.id = user.getId();
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
+        this.email = user.getEmail();
+        this.active = user.getActive();
+        this.role = user.getRole();
     }
 
     public Long getId() {

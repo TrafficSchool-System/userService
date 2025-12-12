@@ -13,6 +13,7 @@ import com.example.userService.Repository.UserRepository;
 import com.example.userService.Repository.LoginTokenRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -90,11 +91,12 @@ public class UserService implements UserServiceInterface {
         return userRepository.existsByEmail(email);
     }
 
+    // Hämta användare med ID
     @Override
     public UserResponseDTO findById(Long id) {
         // AFFÄRSLOGIK: Hitta användare med ID
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("Användaren hittades ej med id: " + id));
+                .orElseThrow(() -> new UserNotFoundException("Användaren hittades inte med ID: " + id));
 
         // AFFÄRSLOGIK: Retunera användaren om den finns
         return new UserResponseDTO(user);
@@ -106,8 +108,7 @@ public class UserService implements UserServiceInterface {
         //AFFÄRSLOGIK: Validera att email inte är null eller tomt
 
         if (email == null || email.trim().isEmpty()) {
-            throw new UserNotFoundException("Email kan inte vara null eller tomt för att hämta aktuell användare");
-                        
+            throw new UserNotFoundException("Email kan inte vara null eller tomt för att hämta aktuell användare");  
         }
 
         // AFFÄRSLOGIK: Hämta användare - återanvänder befintlig metod
@@ -116,6 +117,59 @@ public class UserService implements UserServiceInterface {
 
         return user; 
         
+    }
+
+    // Hämta alla användare
+    @Override
+    public List<UserResponseDTO> findAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> new UserResponseDTO(
+                    user.getId(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getEmail(),
+                    user.getActive(),
+                    user.getRole()
+                ))
+                    .toList(); 
+    }
+
+    // Uppdater användare med id
+    @Override
+    public UserResponseDTO updateUserById(Long id, RegisterRequestDTO request) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("Användare hittades inte med ID: " + id)); 
+
+        // Kontrollera unik email
+        if (userRepository.existsByEmail(request.getEmail()) && !user.getEmail().equals(request.getEmail())){
+            throw new EmailAllreadyExistsException("Email existerar redan"); 
+        }
+
+        // Uppdatera fälten
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+
+        // Spara ändringarna 
+        User updatedUser = userRepository.save(user); 
+
+        return new UserResponseDTO(
+            updatedUser.getId(), 
+            updatedUser.getFirstName(),
+            updatedUser.getLastName(),
+            updatedUser.getEmail(),
+            updatedUser.getActive(),
+            updatedUser.getRole()
+        ); 
+    }
+
+    // Ta bort användare
+    @Override
+    public void delteUserById(Long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("Användaren hittades inte med ID: " + id)); 
+            userRepository.delete(user);
     }
 
 }
