@@ -36,6 +36,9 @@ public class SecurityConfig {
                                 "/api/users/register" // Registrera ny användare
                         ).permitAll()
 
+                        // GEMENSAMMA ENDPOINTS
+                        .requestMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
+
                         // 🟦 USER endpoints – kräver ROLE_USER
                         .requestMatchers("/api/users/**").hasRole("USER")
 

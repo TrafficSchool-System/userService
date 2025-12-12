@@ -18,14 +18,14 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-increment
     private Long id;
 
-    @Column(unique = true, nullable = false) // Email måste vara unik och får inte vara tom-
-    private String email;
-
     @Column(nullable = false) // Förnamn måste finnas
     private String firstName;
 
     @Column(nullable = false) // Efternamn måste finnas
     private String lastName;
+
+    @Column(unique = true, nullable = false) // Email måste vara unik och får inte vara tom-
+    private String email;
 
     @Column(nullable = false)
     private boolean active = true; // Användaren är aktiv som standard

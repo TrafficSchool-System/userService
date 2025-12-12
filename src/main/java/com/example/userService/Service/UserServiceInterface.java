@@ -1,5 +1,7 @@
 package com.example.userService.Service;
 
+import java.util.List;
+
 import com.example.userService.Dto.RegisterRequestDTO;
 import com.example.userService.Dto.UserResponseDTO;
 
@@ -25,7 +27,15 @@ public interface UserServiceInterface {
     UserResponseDTO findById(Long id); 
 
     //Hämta inloggad användares data baserat på JWT authentication 
-    UserResponseDTO getCurrentUser(String email); 
+    UserResponseDTO getCurrentUser(String email);
+    
+    // Hämta alla användare
+    List<UserResponseDTO> findAllUsers();
+    
+    // Uppdatera användare med id
+    UserResponseDTO updateUserById(Long id, RegisterRequestDTO request);
+    
+    void delteUserById(Long id); 
 
      
 }
