@@ -2,15 +2,18 @@ package com.example.userService.Dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public class RegisterRequestDTO {
 
     
 
     @NotBlank(message = "Namn får inte vara tom")
+    @Pattern(regexp = "^[A-Za-zÅÄÖåäö\\s]+$", message = "Förnamn får endast innehålla bokstäver")
     private String firstName; 
 
     @NotBlank(message = "Efternamn får inte vara tom")
+    @Pattern(regexp = "^[A-Za-zÅÄÖåäö\\s]+$", message = "Efternamn får endast innehålla bokstäver")
     private String lastName;
 
     @NotBlank(message = "E-psoten får inte vara tom")

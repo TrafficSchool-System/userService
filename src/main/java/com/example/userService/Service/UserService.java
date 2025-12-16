@@ -105,18 +105,18 @@ public class UserService implements UserServiceInterface {
 
     @Override
     public UserResponseDTO getCurrentUser(String email) {
-        //AFFÄRSLOGIK: Validera att email inte är null eller tomt
+        // AFFÄRSLOGIK: Validera att email inte är null eller tomt
 
         if (email == null || email.trim().isEmpty()) {
-            throw new UserNotFoundException("Email kan inte vara null eller tomt för att hämta aktuell användare");  
+            throw new UserNotFoundException("Email kan inte vara null eller tomt för att hämta aktuell användare");
         }
 
         // AFFÄRSLOGIK: Hämta användare - återanvänder befintlig metod
         // Detta kastar UserNotFoundException om användaren inte finns
         UserResponseDTO user = findByEmail(email);
 
-        return user; 
-        
+        return user;
+
     }
 
     // Hämta alla användare
@@ -125,25 +125,24 @@ public class UserService implements UserServiceInterface {
         return userRepository.findAll()
                 .stream()
                 .map(user -> new UserResponseDTO(
-                    user.getId(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getEmail(),
-                    user.getActive(),
-                    user.getRole()
-                ))
-                    .toList(); 
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        user.getActive(),
+                        user.getRole()))
+                .toList();
     }
 
     // Uppdater användare med id
     @Override
     public UserResponseDTO updateUserById(Long id, RegisterRequestDTO request) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new UserNotFoundException("Användare hittades inte med ID: " + id)); 
+                .orElseThrow(() -> new UserNotFoundException("Användare hittades inte med ID: " + id));
 
         // Kontrollera unik email
-        if (userRepository.existsByEmail(request.getEmail()) && !user.getEmail().equals(request.getEmail())){
-            throw new EmailAllreadyExistsException("Email existerar redan"); 
+        if (userRepository.existsByEmail(request.getEmail()) && !user.getEmail().equals(request.getEmail())) {
+            throw new EmailAllreadyExistsException("Email existerar redan");
         }
 
         // Uppdatera fälten
@@ -151,25 +150,24 @@ public class UserService implements UserServiceInterface {
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
 
-        // Spara ändringarna 
-        User updatedUser = userRepository.save(user); 
+        // Spara ändringarna
+        User updatedUser = userRepository.save(user);
 
         return new UserResponseDTO(
-            updatedUser.getId(), 
-            updatedUser.getFirstName(),
-            updatedUser.getLastName(),
-            updatedUser.getEmail(),
-            updatedUser.getActive(),
-            updatedUser.getRole()
-        ); 
+                updatedUser.getId(),
+                updatedUser.getFirstName(),
+                updatedUser.getLastName(),
+                updatedUser.getEmail(),
+                updatedUser.getActive(),
+                updatedUser.getRole());
     }
 
     // Ta bort användare
     @Override
     public void delteUserById(Long id) {
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new UserNotFoundException("Användaren hittades inte med ID: " + id)); 
-            userRepository.delete(user);
+                .orElseThrow(() -> new UserNotFoundException("Användaren hittades inte med ID: " + id));
+        userRepository.delete(user);
     }
 
 }
