@@ -67,4 +67,11 @@ public class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
+    // Hämta totala användare
+    @GetMapping("/stats/total-users")
+    public ResponseEntity<Long> getTotalUsers(){
+        long totalUsers = userService.countTotalUsers(); 
+        return ResponseEntity.ok(totalUsers); 
+    }
+
 }
