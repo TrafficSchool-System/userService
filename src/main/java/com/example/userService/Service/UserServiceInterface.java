@@ -37,5 +37,8 @@ public interface UserServiceInterface {
     
     void delteUserById(Long id); 
 
+    // Total antal användare
+    long countTotalUsers(); 
+
      
 }

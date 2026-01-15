@@ -170,4 +170,9 @@ public class UserService implements UserServiceInterface {
         userRepository.delete(user);
     }
 
+    @Override
+    public long countTotalUsers() {
+        return userRepository.count(); 
+    }
+
 }
