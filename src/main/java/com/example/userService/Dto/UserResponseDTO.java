@@ -2,35 +2,46 @@ package com.example.userService.Dto;
 
 import com.example.userService.Entity.User;
 import com.example.userService.Enum.UserRole;
+import java.time.LocalDateTime;
 
 public class UserResponseDTO {
 
-    private Long id; 
-    private String firstName; 
-    private String lastName; 
-    private String email; 
+    private Long id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String personalNumber;
+    private String phoneNumber;
     private boolean active;
-    private UserRole role; 
+    private UserRole role;
+    private LocalDateTime createdAt;
 
-    public UserResponseDTO() {}
+    public UserResponseDTO() {
+    }
 
-
-    public UserResponseDTO(Long id, String firstName, String lastName, String email, boolean active, UserRole role) {
+    public UserResponseDTO(Long id, String firstName, String lastName, String email, String personalNumber,
+            String phoneNumber, boolean active, UserRole role, LocalDateTime createdAt) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.personalNumber = personalNumber;
+        this.phoneNumber = phoneNumber;
         this.active = active;
-        this.role = role; 
+        this.role = role;
+        this.createdAt = createdAt;
     }
 
-    public UserResponseDTO(User user){
+    public UserResponseDTO(User user) {
         this.id = user.getId();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
+        this.personalNumber = user.getPersonalNumber();
+        this.phoneNumber = user.getPhoneNumber();
         this.active = user.getActive();
         this.role = user.getRole();
+        this.createdAt = user.getCreatedAt();
     }
 
     public Long getId() {
@@ -81,6 +92,30 @@ public class UserResponseDTO {
         this.role = role;
     }
 
+    public String getPersonalNumber() {
+        return personalNumber;
+    }
+
+    public void setPersonalNumber(String personalNumber) {
+        this.personalNumber = personalNumber;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
     @Override
     public String toString() {
         return "UserResponse{" +
@@ -88,10 +123,11 @@ public class UserResponseDTO {
                 ", email='" + email + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
+                ", personalNumber='" + personalNumber + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
                 ", active=" + active +
                 ", role=" + role +
                 '}';
     }
-
 
 }

@@ -17,6 +17,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      //Bara de vi måste ha för passwordless login:
      Optional<User> findByEmail(String email); 
      boolean existsByEmail(String email);  
+     boolean existsByPersonalNumber(String personalNumber);
 
      // Räkna användare
      long count();

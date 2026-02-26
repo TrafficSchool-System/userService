@@ -1,5 +1,6 @@
 package com.example.userService.Security;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +42,9 @@ public class JwtUtil {
     // Genererar en JWT token med role (BEST PRACTICE)
     public String generateToken(String email, String role, Long userId) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role); // Lägg till role i token
+        // Token innehåller roller UTAN "ROLE_" prefix (Spring Security standard)
+        claims.put("roles", Collections.singletonList(role.toUpperCase())); // "USER" eller "ADMIN"
+        claims.put("role", role); // Behåll för bakåtkompatibilitet
         claims.put("userId", userId); // Lägg till userId i token
         return createToken(claims, email);
     }

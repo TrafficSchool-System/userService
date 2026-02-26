@@ -4,10 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.userService.Dto.RegisterRequestDTO;
+import com.example.userService.Dto.UpdateUserRequestDTO;
 import com.example.userService.Dto.UserResponseDTO;
 import com.example.userService.Entity.User;
 import com.example.userService.Entity.LoginToken;
 import com.example.userService.Exception.EmailAllreadyExistsException;
+import com.example.userService.Exception.PersonalNumberAlreadyExistsException;
 import com.example.userService.Exception.UserNotFoundException;
 import com.example.userService.Repository.UserRepository;
 import com.example.userService.Repository.LoginTokenRepository;
@@ -36,11 +38,19 @@ public class UserService implements UserServiceInterface {
             throw new EmailAllreadyExistsException("Email finns redan registrerad: " + request.getEmail());
         }
 
+        // AFFÄRSLOGIK: Kontrollera om personnummer redan finns
+        if (userRepository.existsByPersonalNumber(request.getPersonalNumber())) {
+            throw new PersonalNumberAlreadyExistsException(
+                    "Personnummer finns redan registrerat: " + request.getPersonalNumber());
+        }
+
         // AFFÄRSLOGIK: Skapa en ny användare från request
         User user = new User(
                 request.getEmail(),
                 request.getFirstName(),
-                request.getLastName());
+                request.getLastName(),
+                request.getPersonalNumber(),
+                request.getPhoneNumber());
 
         // AFFÄRSLOGIK: Spara användaren i databasen
         User savedUser = userRepository.save(user);
@@ -129,8 +139,11 @@ public class UserService implements UserServiceInterface {
                         user.getFirstName(),
                         user.getLastName(),
                         user.getEmail(),
+                        user.getPersonalNumber(),
+                        user.getPhoneNumber(),
                         user.getActive(),
-                        user.getRole()))
+                        user.getRole(),
+                        user.getCreatedAt()))
                 .toList();
     }
 
@@ -158,8 +171,11 @@ public class UserService implements UserServiceInterface {
                 updatedUser.getFirstName(),
                 updatedUser.getLastName(),
                 updatedUser.getEmail(),
+                updatedUser.getPersonalNumber(),
+                updatedUser.getPhoneNumber(),
                 updatedUser.getActive(),
-                updatedUser.getRole());
+                updatedUser.getRole(),
+                updatedUser.getCreatedAt());
     }
 
     // Ta bort användare
@@ -172,7 +188,44 @@ public class UserService implements UserServiceInterface {
 
     @Override
     public long countTotalUsers() {
-        return userRepository.count(); 
+        return userRepository.count();
+    }
+
+    // Alias för findAllUsers - används av AdminService
+    @Override
+    public List<UserResponseDTO> getAllUsers() {
+        return findAllUsers();
+    }
+
+    // Alias för findById - används av AdminService
+    @Override
+    public UserResponseDTO getUserById(Long id) {
+        return findById(id);
+    }
+
+    /**
+     * UPPDATERA ANVÄNDARINFORMATION
+     */
+    @Override
+    public UserResponseDTO updateUser(Long id, UpdateUserRequestDTO request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Användare med ID " + id + " hittades inte"));
+
+        // Uppdatera fält
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+
+        if (request.getPersonalNumber() != null && !request.getPersonalNumber().isEmpty()) {
+            user.setPersonalNumber(request.getPersonalNumber());
+        }
+
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isEmpty()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+
+        User updatedUser = userRepository.save(user);
+        return new UserResponseDTO(updatedUser);
     }
 
 }
