@@ -52,9 +52,19 @@ public class SubscriptionResponseDTO {
         // Beräkna frontend-kompatibla fält
         this.price = this.packagePrice; // Alias
         this.isExpired = this.expired; // Alias
-        this.valid = this.active && !this.expired;
-        this.daysRemaining = this.hoursRemaining / 24; // Konvertera timmar till dagar
-        this.isExpiringSoon = this.valid && this.daysRemaining <= 3 && this.daysRemaining > 0;
+
+        // VIKTIGT: active är redan korrekt beräknad i backend (!cancelled &&
+        // !isExpired)
+        // Ingen anledning att duplicera logiken här
+        this.valid = this.active;
+
+        // Avrunda dagar uppåt för bättre UX: 10 timmar = 1 dag (inte 0 dagar)
+        // Detta förhindrar förvirrande "0 dagar kvar" meddelanden för aktiva
+        // subscriptions
+        this.daysRemaining = (long) Math.ceil(this.hoursRemaining / 24.0);
+
+        // Varning när mindre än 7 dagar kvar (endast för aktiva subscriptions)
+        this.isExpiringSoon = this.valid && this.daysRemaining <= 7 && this.daysRemaining > 0;
     }
 
     // Getters and Setters

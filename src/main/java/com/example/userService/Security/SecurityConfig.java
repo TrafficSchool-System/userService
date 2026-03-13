@@ -64,47 +64,56 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
 
                                 // FÖRKLARING: Konfigurera vilka endpoints som behöver authentication
+                                // ORDNING VIKTIGT: Mer specifika regler måste komma först!
                                 .authorizeHttpRequests(authz -> authz
 
-                                                // 🟢 ÖPPNA ENDPOINTS - Ingen authentication krävs
+                                                // ==============================================
+                                                // PUBLIC ENDPOINTS - No authentication required
+                                                // ==============================================
                                                 .requestMatchers(
-                                                                "/api/auth/login", // Begär magic link
-                                                                "/api/auth/verify", // Basic verify (utan JWT)
-                                                                "/api/auth/verify-jwt", // Verify och få JWT
-                                                                "/api/users/register", // Registrera ny användare
-                                                                "/api/users/test-auth" // DEBUG: Testa JWT authorities
+                                                                "/api/auth/login", // Request magic link
+                                                                "/api/auth/verify", // Basic verify (without JWT)
+                                                                "/api/auth/tokens", // Verify and get JWT
+                                                                "/api/users/test-auth" // DEBUG: Test authentication
                                                 ).permitAll()
 
-                                                // � USER ENDPOINT - Måste komma FÖRE /api/users/{id} annars matchas
-                                                // "me" som id!
-                                                .requestMatchers("/api/users/me").hasAnyRole("USER", "ADMIN")
+                                                // USER REGISTRATION - Public endpoint (POST /api/users)
+                                                // IMPORTANT: Only POST is public
+                                                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/users")
+                                                .permitAll()
 
-                                                // 🔓 INTERNAL SERVICE-TO-SERVICE ENDPOINTS - För andra microservices
-                                                // OCH admins
-                                                // VIKTIGT: Dessa endpoints ska ALDRIG nås direkt från externa klienter
-                                                // Endast microservices (med API key) eller admins (med JWT) kan komma
-                                                // åt dessa
-                                                .requestMatchers(
-                                                                "/api/users", // GET all users (för AdminService)
-                                                                "/api/users/{id}") // GET user by ID (för AdminService)
+                                                // ==============================================
+                                                // ADMIN ENDPOINTS - Require ADMIN or INTERNAL_SERVICE role
+                                                // ==============================================
+                                                // Admin endpoints kan anropas av:
+                                                // 1. Admins via Gateway (med ROLE_ADMIN)
+                                                // 2. AdminService via API key (med ROLE_INTERNAL_SERVICE)
+                                                .requestMatchers("/api/admin/**")
+                                                .hasAnyRole("ADMIN", "INTERNAL_SERVICE")
+
+                                                // USER PROFILE - Require USER or ADMIN
+                                                .requestMatchers("/api/users/me")
+                                                .hasAnyRole("USER", "ADMIN")
+                                                // ==============================================
+                                                // SUBSCRIPTION ENDPOINTS
+                                                // ==============================================
+                                                // CREATE subscription - INTERNAL_SERVICE and ADMIN only
+                                                .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                                                "/api/subscriptions")
                                                 .hasAnyRole("INTERNAL_SERVICE", "ADMIN")
 
-                                                // 🔐 SUBSCRIPTION CREATE - endast INTERNAL_SERVICE och ADMIN
-                                                .requestMatchers("/api/subscriptions")
-                                                .hasAnyRole("INTERNAL_SERVICE", "ADMIN")
+                                                // READ subscriptions - USER, ADMIN, and INTERNAL_SERVICE
+                                                // Ownership checked in controller
+                                                .requestMatchers("/api/subscriptions/**")
+                                                .hasAnyRole("USER", "ADMIN", "INTERNAL_SERVICE")
 
-                                                // 🟡 SUBSCRIPTION READ - USER kan läsa sina egna (ownership-check i
-                                                // controller)
-                                                .requestMatchers("/api/subscriptions/**").hasAnyRole("USER", "ADMIN")
-
-                                                // 🟦 USER endpoints – kräver ROLE_USER
-                                                // OBSERVERA: /api/users/me och /api/users/{id} matchas redan ovan
-                                                .requestMatchers("/api/users/**").hasRole("USER")
-
-                                                // 🔒 ADMIN ENDPOINTS - kräver ROLE_ADMIN
-                                                .requestMatchers(
-                                                                "/api/admin/**")
-                                                .hasRole("ADMIN")
+                                                // ==============================================
+                                                // INTERNAL ENDPOINTS - INTERNAL_SERVICE only
+                                                // ==============================================
+                                                // Internal service-to-service endpoints
+                                                // Endast microservices med X-Internal-API-Key får anropa
+                                                .requestMatchers("/api/internal/**")
+                                                .hasRole("INTERNAL_SERVICE")
 
                                                 // Allt annat blockera
                                                 .anyRequest().denyAll())

@@ -12,26 +12,15 @@ public class UserResponseDTO {
     private String email;
     private String personalNumber;
     private String phoneNumber;
-    private boolean active;
     private UserRole role;
     private LocalDateTime createdAt;
+    private boolean hasActiveSubscription;
 
+    // ✅ DEFAULT CONSTRUCTOR
     public UserResponseDTO() {
     }
 
-    public UserResponseDTO(Long id, String firstName, String lastName, String email, String personalNumber,
-            String phoneNumber, boolean active, UserRole role, LocalDateTime createdAt) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.personalNumber = personalNumber;
-        this.phoneNumber = phoneNumber;
-        this.active = active;
-        this.role = role;
-        this.createdAt = createdAt;
-    }
-
+    // ✅ ENDAST EN CONSTRUCTOR - Från User entity
     public UserResponseDTO(User user) {
         this.id = user.getId();
         this.firstName = user.getFirstName();
@@ -39,10 +28,12 @@ public class UserResponseDTO {
         this.email = user.getEmail();
         this.personalNumber = user.getPersonalNumber();
         this.phoneNumber = user.getPhoneNumber();
-        this.active = user.getActive();
         this.role = user.getRole();
         this.createdAt = user.getCreatedAt();
+        this.hasActiveSubscription = false; // Default värde, sätts av service
     }
+
+    // ✅ GETTERS OCH SETTERS (alla befintliga + den nya)
 
     public Long getId() {
         return id;
@@ -74,14 +65,6 @@ public class UserResponseDTO {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
     }
 
     public UserRole getRole() {
@@ -116,18 +99,14 @@ public class UserResponseDTO {
         this.createdAt = createdAt;
     }
 
-    @Override
-    public String toString() {
-        return "UserResponse{" +
-                "id=" + id +
-                ", email='" + email + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", personalNumber='" + personalNumber + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", active=" + active +
-                ", role=" + role +
-                '}';
+    // ✅ SUBSCRIPTION STATUS GETTER/SETTER
+    // VIKTIGT: Använd 'get' prefix för boolean fields som börjar med "has"
+    // Detta säkerställer korrekt JSON serialization med Jackson
+    public boolean getHasActiveSubscription() {
+        return hasActiveSubscription;
     }
 
+    public void setHasActiveSubscription(boolean hasActiveSubscription) {
+        this.hasActiveSubscription = hasActiveSubscription;
+    }
 }

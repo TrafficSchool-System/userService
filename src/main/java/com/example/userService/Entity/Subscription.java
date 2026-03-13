@@ -43,16 +43,28 @@ public class Subscription {
     @Column(nullable = false)
     private LocalDateTime endDate;
 
+    /**
+     * CANCELLED FLAG
+     * 
+     * OBS: Inverterad logik jämfört med gamla 'active'!
+     * - cancelled = false → Subscription är aktiv ✅
+     * - cancelled = true → Subscription är avbruten av användare/admin ❌
+     * 
+     * I DAGSLÄGET: Används EJ (subscriptions är tidsbaserade, löper ut
+     * automatiskt).
+     * FRAMTIDA: Kan användas för manuell avbrytning eller återbetalning.
+     */
     @Column(nullable = false)
-    private boolean active = true;
+    private boolean cancelled = false;
 
     // Tom konstruktor
-    public Subscription() {}
+    public Subscription() {
+    }
 
     // Konstruktor för att skapa subscription
-    public Subscription(Long userId, Long packageId, String packageName, 
-                       BigDecimal packagePrice, Integer validityDays, 
-                       Integer validityHours, String paymentId) {
+    public Subscription(Long userId, Long packageId, String packageName,
+            BigDecimal packagePrice, Integer validityDays,
+            Integer validityHours, String paymentId) {
         this.userId = userId;
         this.packageId = packageId;
         this.packageName = packageName;
@@ -63,12 +75,12 @@ public class Subscription {
         this.purchaseDate = LocalDateTime.now();
         this.startDate = LocalDateTime.now();
         this.endDate = LocalDateTime.now().plusDays(validityDays);
-        this.active = true;
+        this.cancelled = false; // Ny subscription är alltid aktiv
     }
 
     // ✅ BERÄKNA TIMMAR KVAR (viktigt för frontend!)
     public long getHoursRemaining() {
-        if (!active || LocalDateTime.now().isAfter(endDate)) {
+        if (cancelled || LocalDateTime.now().isAfter(endDate)) {
             return 0;
         }
         Duration duration = Duration.between(LocalDateTime.now(), endDate);
@@ -76,46 +88,132 @@ public class Subscription {
     }
 
     // ✅ KOLLA OM SUBSCRIPTION HAR GÅTT UT
+    // Jämför exakt tid - subscription går ut vid endDate (inte end of day)
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(endDate);
     }
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Long getPackageId() { return packageId; }
-    public void setPackageId(Long packageId) { this.packageId = packageId; }
+    public Long getUserId() {
+        return userId;
+    }
 
-    public String getPackageName() { return packageName; }
-    public void setPackageName(String packageName) { this.packageName = packageName; }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-    public BigDecimal getPackagePrice() { return packagePrice; }
-    public void setPackagePrice(BigDecimal packagePrice) { this.packagePrice = packagePrice; }
+    public Long getPackageId() {
+        return packageId;
+    }
 
-    public Integer getValidityDays() { return validityDays; }
-    public void setValidityDays(Integer validityDays) { this.validityDays = validityDays; }
+    public void setPackageId(Long packageId) {
+        this.packageId = packageId;
+    }
 
-    public Integer getValidityHours() { return validityHours; }
-    public void setValidityHours(Integer validityHours) { this.validityHours = validityHours; }
+    public String getPackageName() {
+        return packageName;
+    }
 
-    public String getPaymentId() { return paymentId; }
-    public void setPaymentId(String paymentId) { this.paymentId = paymentId; }
+    public void setPackageName(String packageName) {
+        this.packageName = packageName;
+    }
 
-    public LocalDateTime getPurchaseDate() { return purchaseDate; }
-    public void setPurchaseDate(LocalDateTime purchaseDate) { this.purchaseDate = purchaseDate; }
+    public BigDecimal getPackagePrice() {
+        return packagePrice;
+    }
 
-    public LocalDateTime getStartDate() { return startDate; }
-    public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
+    public void setPackagePrice(BigDecimal packagePrice) {
+        this.packagePrice = packagePrice;
+    }
 
-    public LocalDateTime getEndDate() { return endDate; }
-    public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
+    public Integer getValidityDays() {
+        return validityDays;
+    }
 
-    public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
+    public void setValidityDays(Integer validityDays) {
+        this.validityDays = validityDays;
+    }
+
+    public Integer getValidityHours() {
+        return validityHours;
+    }
+
+    public void setValidityHours(Integer validityHours) {
+        this.validityHours = validityHours;
+    }
+
+    public String getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(String paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    public LocalDateTime getPurchaseDate() {
+        return purchaseDate;
+    }
+
+    public void setPurchaseDate(LocalDateTime purchaseDate) {
+        this.purchaseDate = purchaseDate;
+    }
+
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDateTime startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDateTime getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDateTime endDate) {
+        this.endDate = endDate;
+    }
+
+    /**
+     * KOLLA OM SUBSCRIPTION ÄR AKTIV
+     * 
+     * En subscription är aktiv om:
+     * 1. Den inte är manuellt avbruten (cancelled = false)
+     * 2. Den inte har gått ut (isExpired() = false)
+     * 
+     * @return true om subscription är aktiv OCH inte utgången
+     */
+    public boolean isActive() {
+        return !cancelled && !isExpired();
+    }
+
+    /**
+     * MANUELLT AVBRYT SUBSCRIPTION
+     * 
+     * FRAMTIDA FUNKTION: Används när användare/admin vill avbryta subscription
+     * för återbetalning eller liknande.
+     * 
+     * I DAGSLÄGET: Används EJ (subscriptions löper ut automatiskt).
+     */
+    public void cancel() {
+        this.cancelled = true;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
+    }
 
     @Override
     public String toString() {
@@ -125,7 +223,8 @@ public class Subscription {
                 ", packageName='" + packageName + '\'' +
                 ", validityDays=" + validityDays +
                 ", endDate=" + endDate +
-                ", active=" + active +
+                ", cancelled=" + cancelled +
+                ", isActive=" + isActive() +
                 ", hoursRemaining=" + getHoursRemaining() +
                 '}';
     }

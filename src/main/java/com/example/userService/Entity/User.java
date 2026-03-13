@@ -35,9 +35,6 @@ public class User {
     @Column(nullable = false) // Mobilnummer måste finnas
     private String phoneNumber; // Mobilnummer
 
-    @Column(nullable = false)
-    private boolean active = true; // Användaren är aktiv som standard
-
     @Enumerated(jakarta.persistence.EnumType.STRING)
     @Column(nullable = false, columnDefinition = "VARCHAR(20) DEFAULT 'USER'")
     private UserRole role = UserRole.USER; // Default USER
@@ -100,14 +97,6 @@ public class User {
         this.lastName = lastName;
     }
 
-    public boolean getActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
     public UserRole getRole() {
         return role;
     }
@@ -143,6 +132,6 @@ public class User {
     @Override
     public String toString() {
         return "User {id=" + id + ", email=" + email + ", firstName=" + firstName + ", lastName=" + lastName
-                + ", personalNumber=" + personalNumber + ", phoneNumber=" + phoneNumber + ", active=" + active + "}";
+                + ", personalNumber=" + personalNumber + ", phoneNumber=" + phoneNumber + ", role=" + role + "}";
     }
 }

@@ -1,4 +1,4 @@
-package com.example.userService.Service;
+package com.example.userService.Service.auth;
 
 import com.example.userService.Dto.JwtResponseDTO;
 import com.example.userService.Dto.LoginRequestDTO;

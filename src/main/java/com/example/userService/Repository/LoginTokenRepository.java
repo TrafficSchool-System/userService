@@ -17,6 +17,9 @@ public interface LoginTokenRepository extends JpaRepository<LoginToken, Long> {
     
     // Spring skapar automatiskt dessa metoder:
     List<LoginToken> findByEmailAndUsedFalse(String email);
+    
+    // Hitta ALLA tokens för en email (även använda) - används vid cascade delete
+    List<LoginToken> findByEmail(String email);
 
     // Ta bort oanvända tokens för en email (spring skapar automatiskt)
     @Transactional

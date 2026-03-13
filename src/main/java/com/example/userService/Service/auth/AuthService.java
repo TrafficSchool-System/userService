@@ -1,4 +1,4 @@
-package com.example.userService.Service;
+package com.example.userService.Service.auth;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +16,8 @@ import com.example.userService.Exception.InvalidTokenException;
 import com.example.userService.Exception.UserNotFoundException;
 import com.example.userService.Repository.LoginTokenRepository;
 import com.example.userService.Security.JwtUtil;
+import com.example.userService.Service.email.EmailServiceInterface;
+import com.example.userService.Service.user.UserServiceInterface;
 
 import jakarta.transaction.Transactional;
 

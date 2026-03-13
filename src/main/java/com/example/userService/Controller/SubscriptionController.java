@@ -2,7 +2,8 @@ package com.example.userService.Controller;
 
 import com.example.userService.Dto.CreateSubscriptionRequestDTO;
 import com.example.userService.Dto.SubscriptionResponseDTO;
-import com.example.userService.Service.SubscriptionServiceInterface;
+import com.example.userService.Service.subscription.SubscriptionServiceInterface;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
