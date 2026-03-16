@@ -1,10 +1,13 @@
 package com.example.userService.Security;
 
+import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -13,6 +16,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * ==========================================
@@ -50,6 +56,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
+        private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+
         @Autowired
         private GatewayHeaderAuthenticationFilter gatewayHeaderAuthenticationFilter;
 
@@ -59,115 +67,124 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
-
-                                // FÖRKLARING: Stäng av CSRF eftersom vi använder JWT (stateless)
+                                // CSRF disabled for stateless JWT authentication
                                 .csrf(csrf -> csrf.disable())
 
-                                // FÖRKLARING: Konfigurera vilka endpoints som behöver authentication
-                                // ORDNING VIKTIGT: Mer specifika regler måste komma först!
+                                // Configure authorization rules
                                 .authorizeHttpRequests(authz -> authz
-
-                                                // ==============================================
-                                                // PUBLIC ENDPOINTS - No authentication required
-                                                // ==============================================
+                                                // ========================================
+                                                // PUBLIC ENDPOINTS
+                                                // ========================================
                                                 .requestMatchers(
                                                                 "/api/auth/login", // Request magic link
-                                                                "/api/auth/verify", // Basic verify (without JWT)
-                                                                "/api/auth/tokens", // Verify and get JWT
-                                                                "/api/users/test-auth" // DEBUG: Test authentication
+                                                                "/api/auth/verify", // Verify token (basic)
+                                                                "/api/auth/tokens", // Verify token and get JWT
+                                                                "/api/users/test-auth" // DEBUG endpoint
                                                 ).permitAll()
 
-                                                // USER REGISTRATION - Public endpoint (POST /api/users)
-                                                // IMPORTANT: Only POST is public
+                                                // User registration - only POST is public
                                                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/users")
                                                 .permitAll()
 
-                                                // ==============================================
-                                                // ADMIN ENDPOINTS - Require ADMIN or INTERNAL_SERVICE role
-                                                // ==============================================
-                                                // Admin endpoints kan anropas av:
-                                                // 1. Admins via Gateway (med ROLE_ADMIN)
-                                                // 2. AdminService via API key (med ROLE_INTERNAL_SERVICE)
+                                                // ========================================
+                                                // ADMIN ENDPOINTS
+                                                // ========================================
+                                                // Accessible by: ADMIN or INTERNAL_SERVICE
                                                 .requestMatchers("/api/admin/**")
                                                 .hasAnyRole("ADMIN", "INTERNAL_SERVICE")
 
-                                                // USER PROFILE - Require USER or ADMIN
+                                                // ========================================
+                                                // USER PROFILE ENDPOINTS
+                                                // ========================================
                                                 .requestMatchers("/api/users/me")
                                                 .hasAnyRole("USER", "ADMIN")
-                                                // ==============================================
+
+                                                // ========================================
                                                 // SUBSCRIPTION ENDPOINTS
-                                                // ==============================================
-                                                // CREATE subscription - INTERNAL_SERVICE and ADMIN only
+                                                // ========================================
+                                                // CREATE - INTERNAL_SERVICE and ADMIN only
                                                 .requestMatchers(org.springframework.http.HttpMethod.POST,
                                                                 "/api/subscriptions")
                                                 .hasAnyRole("INTERNAL_SERVICE", "ADMIN")
 
-                                                // READ subscriptions - USER, ADMIN, and INTERNAL_SERVICE
-                                                // Ownership checked in controller
+                                                // READ - USER, ADMIN, and INTERNAL_SERVICE
+                                                // Ownership verified in controller
                                                 .requestMatchers("/api/subscriptions/**")
                                                 .hasAnyRole("USER", "ADMIN", "INTERNAL_SERVICE")
 
-                                                // ==============================================
-                                                // INTERNAL ENDPOINTS - INTERNAL_SERVICE only
-                                                // ==============================================
-                                                // Internal service-to-service endpoints
-                                                // Endast microservices med X-Internal-API-Key får anropa
+                                                // ========================================
+                                                // INTERNAL SERVICE ENDPOINTS
+                                                // ========================================
+                                                // Only accessible with X-Internal-API-Key
                                                 .requestMatchers("/api/internal/**")
                                                 .hasRole("INTERNAL_SERVICE")
 
-                                                // Allt annat blockera
+                                                // Deny all other requests
                                                 .anyRequest().denyAll())
 
-                                // FÖRKLARING: Stateless sessions - vi använder JWT istället för server sessions
+                                // Stateless session - using JWT tokens instead of server sessions
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                                // FÖRKLARING: Lägg till våra säkerhetsfilter i rätt ordning
-                                // 1. ServiceApiKeyFilter kollar först om requesten har en giltig API key
-                                // (för service-to-service calls från PaymentService etc.)
-                                // 2. GatewayHeaderAuthenticationFilter läser sedan X-User-* headers från
-                                // Gateway
-                                // (för requests från externa klienter som gått igenom Gateway)
+                                // Add security filters in order:
+                                // 1. ServiceApiKeyFilter - checks for X-Internal-API-Key header
+                                // 2. GatewayHeaderAuthenticationFilter - reads X-User-* headers from Gateway
                                 .addFilterBefore(serviceApiKeyFilter, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(gatewayHeaderAuthenticationFilter,
                                                 UsernamePasswordAuthenticationFilter.class)
 
-                                // FÖRKLARING: Hantera unauthorized requests
+                                // Exception handling
                                 .exceptionHandling(exceptions -> exceptions
-                                                .authenticationEntryPoint((request, response, authException) -> {
-
-                                                        // Returnera 401 Unauthorized med custom meddelande
-                                                        response.setStatus(401);
-                                                        response.setContentType("application/json");
-                                                        response.getWriter().write(
-                                                                        "{\"error\": \"Unauthorized\", \"message\": \"Authentication required for this endpoint\"}");
-                                                })
-                                                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                                                        Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
-
-                                                        // Logga autentiseringsinformation vid 403
-                                                        Authentication auth = SecurityContextHolder.getContext()
-                                                                        .getAuthentication();
-                                                        logger.error("=== 403 ACCESS DENIED ===");
-                                                        logger.error("Request Path: {}", request.getRequestURI());
-                                                        logger.error("Request Method: {}", request.getMethod());
-                                                        logger.error("Authentication present: {}", auth != null);
-                                                        if (auth != null) {
-                                                                logger.error("Principal: {}", auth.getPrincipal());
-                                                                logger.error("Authorities: {}", auth.getAuthorities());
-                                                                logger.error("Is Authenticated: {}",
-                                                                                auth.isAuthenticated());
-                                                        }
-                                                        logger.error("Exception: {}",
-                                                                        accessDeniedException.getMessage());
-                                                        logger.error("=========================");
-                                                        // Returnera 403 Forbidden när användaren saknar rätt roll
-                                                        response.setStatus(403);
-                                                        response.setContentType("application/json");
-                                                        response.getWriter().write(
-                                                                        "{\"error\": \"Forbidden\", \"message\": \"Du har inte behörighet att komma åt denna resurs\"}");
-                                                }));
+                                                .authenticationEntryPoint(this::handleAuthenticationException)
+                                                .accessDeniedHandler(this::handleAccessDeniedException));
 
                 return http.build();
+        }
+
+        /**
+         * Handle 401 Unauthorized - when authentication is missing
+         */
+        private void handleAuthenticationException(HttpServletRequest request, HttpServletResponse response,
+                        org.springframework.security.core.AuthenticationException authException) throws IOException {
+                log.warn("Authentication failed for request: {} {}", request.getMethod(), request.getRequestURI());
+                sendJsonError(response, HttpStatus.UNAUTHORIZED, "Unauthorized",
+                                "Authentication required for this endpoint");
+        }
+
+        /**
+         * Handle 403 Forbidden - when user lacks required role/permission
+         */
+        private void handleAccessDeniedException(HttpServletRequest request, HttpServletResponse response,
+                        org.springframework.security.access.AccessDeniedException accessDeniedException)
+                        throws IOException {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+                log.error("=== 403 ACCESS DENIED ===");
+                log.error("Request Path: {}", request.getRequestURI());
+                log.error("Request Method: {}", request.getMethod());
+                log.error("Authentication present: {}", auth != null);
+                if (auth != null) {
+                        log.error("Principal: {}", auth.getPrincipal());
+                        log.error("Authorities: {}", auth.getAuthorities());
+                        log.error("Is Authenticated: {}", auth.isAuthenticated());
+                }
+                log.error("Exception: {}", accessDeniedException.getMessage());
+                log.error("=========================");
+
+                sendJsonError(response, HttpStatus.FORBIDDEN, "Forbidden",
+                                "You do not have permission to access this resource");
+        }
+
+        /**
+         * Send JSON error response
+         */
+        private void sendJsonError(HttpServletResponse response, HttpStatus status, String error, String message)
+                        throws IOException {
+                response.setStatus(status.value());
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().write(String.format(
+                                "{\"error\": \"%s\", \"message\": \"%s\"}",
+                                error, message));
         }
 }

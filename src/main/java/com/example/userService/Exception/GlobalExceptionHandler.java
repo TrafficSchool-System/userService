@@ -31,8 +31,8 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(UserNotFoundException.class)
         public ResponseEntity<Map<String, Object>> handleUserNotFound(UserNotFoundException ex) {
                 return new ResponseEntity<>(
-                                buildError("Användare hittades inte",
-                                                "Den användare du söker efter kunde inte hittas i systemet.",
+                                buildError("User not found",
+                                                "The user you are looking for could not be found in the system.",
                                                 HttpStatus.NOT_FOUND.value()),
                                 HttpStatus.NOT_FOUND);
         }
@@ -40,8 +40,8 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(EmailAllreadyExistsException.class)
         public ResponseEntity<Map<String, Object>> handleEmailAllreadyExists(EmailAllreadyExistsException ex) {
                 return new ResponseEntity<>(
-                                buildError("E-post redan registrerad",
-                                                "En användare med denna e-postadress finns redan registrerad i systemet.",
+                                buildError("Email already registered",
+                                                "A user with this email address is already registered in the system.",
                                                 HttpStatus.CONFLICT.value()),
                                 HttpStatus.CONFLICT);
         }
@@ -50,8 +50,8 @@ public class GlobalExceptionHandler {
         public ResponseEntity<Map<String, Object>> handlePersonalNumberAlreadyExists(
                         PersonalNumberAlreadyExistsException ex) {
                 return new ResponseEntity<>(
-                                buildError("Personnummer redan registrerat",
-                                                "En användare med detta personnummer finns redan registrerad i systemet.",
+                                buildError("Personal number already registered",
+                                                "A user with this personal number is already registered in the system.",
                                                 HttpStatus.CONFLICT.value()),
                                 HttpStatus.CONFLICT);
         }
@@ -59,8 +59,8 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(InvalidTokenException.class)
         public ResponseEntity<Map<String, Object>> handleInvalidToken(InvalidTokenException ex) {
                 return new ResponseEntity<>(
-                                buildError("Ogiltig token",
-                                                "Länken du försöker använda är ogiltig. Kontrollera att du använder rätt länk.",
+                                buildError("Invalid token",
+                                                "The link you are trying to use is invalid. Please make sure you are using the correct link.",
                                                 HttpStatus.UNAUTHORIZED.value()),
                                 HttpStatus.UNAUTHORIZED);
         }
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(TokenExpiredException.class)
         public ResponseEntity<Map<String, Object>> handleTokenExpired(TokenExpiredException ex) {
                 return new ResponseEntity<>(
-                                buildError("Token har gått ut", "Länken har gått ut. Vänligen begär en ny länk.",
+                                buildError("Token expired", "The link has expired. Please request a new link.",
                                                 HttpStatus.UNAUTHORIZED.value()),
                                 HttpStatus.UNAUTHORIZED);
         }
@@ -76,9 +76,9 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(ForbiddenException.class)
         public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
                 return new ResponseEntity<>(
-                                buildError("Åtkomst nekad",
+                                buildError("Access denied",
                                                 ex.getMessage() != null ? ex.getMessage()
-                                                                : "Du har inte behörighet att komma åt denna resurs.",
+                                                                : "You do not have permission to access this resource.",
                                                 HttpStatus.FORBIDDEN.value()),
                                 HttpStatus.FORBIDDEN);
         }
@@ -91,8 +91,8 @@ public class GlobalExceptionHandler {
                                 .map(error -> error.getDefaultMessage())
                                 .collect(Collectors.toList());
 
-                Map<String, Object> body = buildError("Valideringsfel",
-                                "Vänligen kontrollera dina uppgifter och försök igen.",
+                Map<String, Object> body = buildError("Validation error",
+                                "Please check your input and try again.",
                                 HttpStatus.BAD_REQUEST.value());
                 body.put("details", errors);
 
@@ -106,7 +106,7 @@ public class GlobalExceptionHandler {
                                 .map(ConstraintViolation::getMessage)
                                 .collect(Collectors.toList());
 
-                Map<String, Object> body = buildError("Valideringsfel", "Uppgifterna uppfyller inte kraven.",
+                Map<String, Object> body = buildError("Validation error", "The provided data does not meet the requirements.",
                                 HttpStatus.BAD_REQUEST.value());
                 body.put("details", errors);
 
@@ -115,16 +115,16 @@ public class GlobalExceptionHandler {
 
         @ExceptionHandler(MethodArgumentTypeMismatchException.class)
         public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-                String error = "Ogiltigt värde angett. Vänligen kontrollera att du skriver in rätt typ av information.";
+                String error = "Invalid value provided. Please check that you are entering the correct type of information.";
                 return new ResponseEntity<>(
-                                buildError("Ogiltigt värde", error, HttpStatus.BAD_REQUEST.value()),
+                                buildError("Invalid value", error, HttpStatus.BAD_REQUEST.value()),
                                 HttpStatus.BAD_REQUEST);
         }
 
         @ExceptionHandler(IllegalArgumentException.class)
         public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
                 return new ResponseEntity<>(
-                                buildError("Ogiltigt argument", "Något av de angivna värdena är inte giltigt.",
+                                buildError("Invalid argument", "One of the provided values is not valid.",
                                                 HttpStatus.BAD_REQUEST.value()),
                                 HttpStatus.BAD_REQUEST);
         }
@@ -137,8 +137,8 @@ public class GlobalExceptionHandler {
                 }
 
                 return new ResponseEntity<>(
-                                buildError("Ett fel uppstod",
-                                                "Något gick fel. Vänligen försök igen senare eller kontakta support om problemet kvarstår.",
+                                buildError("An error occurred",
+                                                "Something went wrong. Please try again later or contact support if the problem persists.",
                                                 HttpStatus.INTERNAL_SERVER_ERROR.value()),
                                 HttpStatus.INTERNAL_SERVER_ERROR);
         }
