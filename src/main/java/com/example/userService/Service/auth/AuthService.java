@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.example.userService.Dto.JwtResponseDTO;
 import com.example.userService.Dto.LoginRequestDTO;
@@ -23,6 +25,8 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class AuthService implements AuthServiceInterface {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private LoginTokenRepository loginTokenRepository;
@@ -43,7 +47,7 @@ public class AuthService implements AuthServiceInterface {
 
         // AFFÄRSLOGIK: Kontrollera om användaren finns
         if (!userService.emailExists(email)) {
-            throw new UserNotFoundException("Användaren med email: " + email + " finns inte. Registrera dig först!");
+            throw new UserNotFoundException("User with email: " + email + " does not exist. Please register first!");
 
         }
 
@@ -68,16 +72,16 @@ public class AuthService implements AuthServiceInterface {
 
         // AFFÄRSLOGIK: Hitta token som inte är använd
         LoginToken loginToken = loginTokenRepository.findByTokenAndUsedFalse(tokenString)
-                .orElseThrow(() -> new InvalidTokenException("Ogiltig eller redan använd Länk"));
+                .orElseThrow(() -> new InvalidTokenException("Invalid or already used link"));
 
         // AFFÄRSLOGIK: Kontrollera om token har gått ut
         if (LocalDateTime.now().isAfter(loginToken.getExpiresAt())) {
-            throw new InvalidTokenException("Länk har gått utt, begär en ny länk");
+            throw new InvalidTokenException("Link has expired, request a new link");
         }
 
         // AFFÄRSLOGIK: Kontrollera om token redan används(extra säkerhet)
         if (loginToken.isUsed()) {
-            throw new InvalidTokenException("Länk har redan används.");
+            throw new InvalidTokenException("Link has already been used");
         }
 
         // AFFÄRSLOGIK: Markera token som använd(One time use)
@@ -121,7 +125,7 @@ public class AuthService implements AuthServiceInterface {
         loginTokenRepository.deleteByUsedTrue();
 
         // loginTokenRepository.deleteExpiredAndUsedTokens(now);
-        System.out.println("✅ Gamla tokens städade: " + now);
+        log.info("Old tokens cleaned up at: {}", now);
 
     }
 

@@ -1,5 +1,6 @@
 package com.example.userService.Config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,9 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 @Configuration
 public class WebClientConfig {
+
+    @Value("${service.api.key}")
+    private String serviceApiKey; 
 
     /**
      * Load-balanced WebClient Builder
@@ -49,7 +53,7 @@ public class WebClientConfig {
         return webClientBuilder
                 .baseUrl("http://payment-service")
                 .defaultHeader("X-Internal-Source", "user-service")
-                .defaultHeader("X-Internal-API-Key", "TrafficSchool-Internal-Key-2026-CHANGE-IN-PROD")
+                .defaultHeader("X-Internal-API-Key", serviceApiKey)
                 .build();
     }
 }

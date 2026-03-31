@@ -39,19 +39,19 @@ public class SubscriptionService implements SubscriptionServiceInterface {
     @Override
     @Transactional
     public SubscriptionResponseDTO createSubscription(CreateSubscriptionRequestDTO request) {
-        log.info("📦 Skapar subscription för userId={}, packageId={}, paymentId={}",
+        log.info("Creating subscription for userId={}, packageId={}, paymentId={}",
                 request.getUserId(), request.getPackageId(), request.getPaymentId());
 
         // VALIDERING: Att användaren finns
         if (!userRepository.existsById(request.getUserId())) {
-            log.error("❌ Användare med ID {} finns inte", request.getUserId());
-            throw new UserNotFoundException("Användare med ID " + request.getUserId() + " finns inte");
+            log.error("User with ID {} does not exist", request.getUserId());
+            throw new UserNotFoundException("User with ID " + request.getUserId() + " does not exist");
         }
 
         // VALIDERING: Ingen dubblettbetalning (samma paymentId)
         if (subscriptionRepository.findByPaymentId(request.getPaymentId()).isPresent()) {
-            log.warn("⚠️ Subscription finns redan för paymentId={}", request.getPaymentId());
-            throw new IllegalArgumentException("Subscription finns redan för denna betalning");
+            log.warn("Subscription already exists for paymentId={}", request.getPaymentId());
+            throw new IllegalArgumentException("Subscription already exists for this payment");
         }
 
         // SKAPA: Ny subscription från request
@@ -67,7 +67,7 @@ public class SubscriptionService implements SubscriptionServiceInterface {
         // SPARA: I databasen
         Subscription savedSubscription = subscriptionRepository.save(subscription);
 
-        log.info("✅ Subscription skapad: ID={}, userId={}, packageName={}, endDate={}",
+        log.info("Subscription created: ID={}, userId={}, packageName={}, endDate={}",
                 savedSubscription.getId(), savedSubscription.getUserId(),
                 savedSubscription.getPackageName(), savedSubscription.getEndDate());
 
@@ -85,7 +85,7 @@ public class SubscriptionService implements SubscriptionServiceInterface {
      */
     @Override
     public List<SubscriptionResponseDTO> getUserSubscriptions(Long userId) {
-        log.info("🔍 Hämtar alla subscriptions för userId={}", userId);
+        log.info("Fetching all subscriptions for userId={}", userId);
         return subscriptionRepository.findByUserId(userId)
                 .stream()
                 .map(SubscriptionResponseDTO::new)
@@ -109,7 +109,7 @@ public class SubscriptionService implements SubscriptionServiceInterface {
      */
     @Override
     public List<SubscriptionResponseDTO> getActiveUserSubscriptions(Long userId) {
-        log.info("🔍 Hämtar aktiva (giltiga) subscriptions för userId={}", userId);
+        log.info("Fetching active (valid) subscriptions for userId={}", userId);
         return subscriptionRepository.findByUserIdAndCancelledFalse(userId)
                 .stream()
                 .filter(subscription -> subscription.isActive()) // ✅ Filtrera: Endast verkligt aktiva (inte utgångna)
@@ -123,11 +123,11 @@ public class SubscriptionService implements SubscriptionServiceInterface {
      */
     @Override
     public SubscriptionResponseDTO getSubscriptionById(Long id) {
-        log.info("🔍 Hämtar subscription med ID={}", id);
+        log.info("Fetching subscription with ID={}", id);
         Subscription subscription = subscriptionRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("❌ Subscription med ID {} finns inte", id);
-                    return new IllegalArgumentException("Subscription med ID " + id + " finns inte");
+                    log.error("Subscription with ID {} not found", id);
+                    return new IllegalArgumentException("Subscription with ID " + id + " not found");
                 });
         return new SubscriptionResponseDTO(subscription);
     }
@@ -149,7 +149,7 @@ public class SubscriptionService implements SubscriptionServiceInterface {
     public List<SubscriptionResponseDTO> getUserSubscriptionsWithAuth(
             Long requestedUserId, Long authenticatedUserId, boolean isAdmin) {
 
-        log.info("🔒 Authorization check - requestedUserId: {}, authenticatedUserId: {}, isAdmin: {}",
+        log.info("Authorization check - requestedUserId: {}, authenticatedUserId: {}, isAdmin: {}",
                 requestedUserId, authenticatedUserId, isAdmin);
 
         // AUTHORIZATION: Kolla om användaren har rätt
@@ -167,11 +167,11 @@ public class SubscriptionService implements SubscriptionServiceInterface {
     public List<SubscriptionResponseDTO> getActiveUserSubscriptionsWithAuth(
             Long requestedUserId, Long authenticatedUserId, boolean isAdmin) {
 
-        log.info("🔒 Authorization check (active) - requestedUserId: {}, authenticatedUserId: {}, isAdmin: {}",
+        log.info("Authorization check (active) - requestedUserId: {}, authenticatedUserId: {}, isAdmin: {}",
                 requestedUserId, authenticatedUserId, isAdmin);
 
         // AUTHORIZATION: Kolla om användaren har rätt
-        checkAuthorization(requestedUserId, authenticatedUserId, isAdmin, "aktiva subscriptions");
+        checkAuthorization(requestedUserId, authenticatedUserId, isAdmin, "active subscriptions");
 
         // ÅTERANVÄND: Anropa grundmetod
         return getActiveUserSubscriptions(requestedUserId);
@@ -188,31 +188,31 @@ public class SubscriptionService implements SubscriptionServiceInterface {
     public SubscriptionResponseDTO getSubscriptionByIdWithAuth(
             Long subscriptionId, Long authenticatedUserId, boolean isAdmin) {
 
-        log.info("🔒 Authorization check (by ID) - subscriptionId: {}, authenticatedUserId: {}, isAdmin: {}",
+        log.info("Authorization check (by ID) - subscriptionId: {}, authenticatedUserId: {}, isAdmin: {}",
                 subscriptionId, authenticatedUserId, isAdmin);
 
         // HÄMTA: Subscription först
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> {
-                    log.error("❌ Subscription med ID {} finns inte", subscriptionId);
-                    return new IllegalArgumentException("Subscription med ID " + subscriptionId + " finns inte");
+                    log.error("Subscription with ID {} not found", subscriptionId);
+                    return new IllegalArgumentException("Subscription with ID " + subscriptionId + " not found");
                 });
 
         // AUTHORIZATION: Admin kan se alla
         if (isAdmin) {
-            log.info("✅ Admin access granted");
+            log.info("Admin access granted");
             return new SubscriptionResponseDTO(subscription);
         }
 
         // AUTHORIZATION: User kan endast se sina egna
         if (!subscription.getUserId().equals(authenticatedUserId)) {
-            log.warn("⛔ FORBIDDEN: User {} tried to access subscription {} owned by user {}",
+            log.warn("FORBIDDEN: User {} tried to access subscription {} owned by user {}",
                     authenticatedUserId, subscriptionId, subscription.getUserId());
             throw new ForbiddenException(
-                    "Du har inte behörighet att se denna subscription");
+                    "You do not have permission to view this subscription");
         }
 
-        log.info("✅ User access granted - viewing own subscription");
+        log.info("User access granted - viewing own subscription");
         return new SubscriptionResponseDTO(subscription);
     }
 
@@ -243,18 +243,18 @@ public class SubscriptionService implements SubscriptionServiceInterface {
             String resourceName) {
         // ADMIN: Tillåt allt
         if (isAdmin) {
-            log.info("✅ Admin access granted");
+            log.info("Admin access granted");
             return;
         }
 
         // USER: Endast egna data
         if (!requestedUserId.equals(authenticatedUserId)) {
-            log.warn("⛔ FORBIDDEN: User {} tried to access {} for user {}",
+            log.warn("FORBIDDEN: User {} tried to access {} for user {}",
                     authenticatedUserId, resourceName, requestedUserId);
             throw new ForbiddenException(
-                    "Du har inte behörighet att se denna användares " + resourceName);
+                    "You do not have permission to view this user's " + resourceName);
         }
 
-        log.info("✅ User access granted - viewing own {}", resourceName);
+        log.info("User access granted - viewing own {}", resourceName);
     }
 }

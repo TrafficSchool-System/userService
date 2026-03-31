@@ -18,12 +18,17 @@ import com.example.userService.Repository.LoginTokenRepository;
 import com.example.userService.Repository.SubscriptionRepository;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class UserService implements UserServiceInterface {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -53,13 +58,13 @@ public class UserService implements UserServiceInterface {
     public UserResponseDTO registerUser(RegisterRequestDTO request) {
         // VALIDERING: Kontrollera om email redan finns
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAllreadyExistsException("Email finns redan registrerad: " + request.getEmail());
+            throw new EmailAllreadyExistsException("Email already registered: " + request.getEmail());
         }
 
         // VALIDERING: Kontrollera om personnummer redan finns
         if (userRepository.existsByPersonalNumber(request.getPersonalNumber())) {
             throw new PersonalNumberAlreadyExistsException(
-                    "Personnummer finns redan registrerat: " + request.getPersonalNumber());
+                    "Personal number already registered: " + request.getPersonalNumber());
         }
 
         // SKAPA: Ny användare från request
@@ -127,7 +132,7 @@ public class UserService implements UserServiceInterface {
     public UserResponseDTO findByEmail(String email) {
         // HITTA: Användare i databasen
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("Användare hittades inte med email: " + email));
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
 
         // KONVERTERA: Till DTO och sätt hasActiveSubscription
         UserResponseDTO dto = new UserResponseDTO(user);
@@ -153,7 +158,7 @@ public class UserService implements UserServiceInterface {
     public UserResponseDTO findById(Long id) {
         // HITTA: Användare med ID
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("Användare hittades inte med ID: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
         // KONVERTERA: Till DTO och sätt hasActiveSubscription
         UserResponseDTO dto = new UserResponseDTO(user);
@@ -210,11 +215,11 @@ public class UserService implements UserServiceInterface {
     public UserResponseDTO updateUserById(Long id, RegisterRequestDTO request) {
         // HITTA: Användare att uppdatera
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("Användare hittades inte med ID: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
         // VALIDERING: Kontrollera att email är unikt (om den ändras)
         if (userRepository.existsByEmail(request.getEmail()) && !user.getEmail().equals(request.getEmail())) {
-            throw new EmailAllreadyExistsException("Email existerar redan");
+            throw new EmailAllreadyExistsException("Email already exists");
         }
 
         // UPPDATERA: Användarens fält
@@ -241,7 +246,7 @@ public class UserService implements UserServiceInterface {
     public UserResponseDTO updateUser(Long id, UpdateUserRequestDTO request) {
         // HITTA: Användare att uppdatera
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("Användare med ID " + id + " hittades inte"));
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + id + " not found"));
 
         // UPPDATERA: Användarens fält
         user.setFirstName(request.getFirstName());
@@ -266,89 +271,85 @@ public class UserService implements UserServiceInterface {
 
         return dto;
     }
-/**
- * TA BORT ANVÄNDARE (MED CASCADE DELETE VIA REST API)
- * 
- * Permanent radering från databasen och relaterade services.
- * VARNING: Detta kan inte ångras!
- * 
- * CASCADE DELETE FLOW:
- * 1. Radera subscriptions (UserService DB)
- * 2. Radera login tokens (UserService DB)
- * 3. Anropa PaymentService för att radera payments (PaymentService DB)
- * 4. Radera användaren (UserService DB)
- * 
- * MICROSERVICE KOMMUNIKATION:
- * - WebClient används för att anropa PaymentService
- * - Eureka service discovery hanterar routing automatiskt
- * - Felanrop loggas men blockerar inte raderingen (fail-safe)
- * 
- * @param id - User ID att radera
- * @throws UserNotFoundException om användaren inte finns
- */
-@Override
-public void delteUserById(Long id) {
-    try {
-        // STEG 1: HITTA användare att radera
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("Användaren hittades inte med ID: " + id));
 
-        System.out.println("🗑️ Initierar cascade delete för user ID: " + id + " (" + user.getEmail() + ")");
-
-        // DEBUG: Kolla om WebClient är injected
-        if (paymentServiceWebClient == null) {
-            System.err.println("❌ FATAL: paymentServiceWebClient är NULL! Har UserService startat om?");
-            throw new RuntimeException("WebClient är inte konfigurerad. Starta om UserService.");
-        }
-
-        // STEG 2: RADERA alla subscriptions (UserService DB)
-        List<Subscription> subscriptions = subscriptionRepository.findByUserId(id);
-        if (!subscriptions.isEmpty()) {
-            subscriptionRepository.deleteAll(subscriptions);
-            System.out.println("✅ Raderade " + subscriptions.size() + " subscriptions");
-        }
-
-        // STEG 3: RADERA alla login tokens (UserService DB)
-        List<LoginToken> tokens = loginTokenRepository.findByEmail(user.getEmail());
-        if (!tokens.isEmpty()) {
-            loginTokenRepository.deleteAll(tokens);
-            System.out.println("✅ Raderade " + tokens.size() + " login tokens");
-        }
-
-        // STEG 4: ANROPA PaymentService för att radera payments (PaymentService DB)
+    /**
+     * TA BORT ANVÄNDARE (MED CASCADE DELETE VIA REST API)
+     * 
+     * Permanent radering från databasen och relaterade services.
+     * VARNING: Detta kan inte ångras!
+     * 
+     * CASCADE DELETE FLOW:
+     * 1. Radera subscriptions (UserService DB)
+     * 2. Radera login tokens (UserService DB)
+     * 3. Anropa PaymentService för att radera payments (PaymentService DB)
+     * 4. Radera användaren (UserService DB)
+     * 
+     * MICROSERVICE KOMMUNIKATION:
+     * - WebClient används för att anropa PaymentService
+     * - Eureka service discovery hanterar routing automatiskt
+     * - Felanrop loggas men blockerar inte raderingen (fail-safe)
+     * 
+     * @param id - User ID att radera
+     * @throws UserNotFoundException if user does not exist
+     */
+    @Override
+    public void delteUserById(Long id) {
         try {
-            System.out.println("📞 Anropar PaymentService för att radera payments...");
-            
-            String response = paymentServiceWebClient
-                    .delete()
-                    .uri("/api/admin/payments/users/" + id)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-            
-            System.out.println("✅ Payments raderade i PaymentService: " + response);
-            
-        } catch (Exception e) {
-            // Logga fel men fortsätt (fail-safe approach)
-            System.err.println("⚠️ Varning: Kunde inte radera payments i PaymentService");
-            System.err.println("⚠️ Error: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
-            System.err.println("⚠️ Fortsätter med användarradering...");
-        }
+            // STEG 1: HITTA användare att radera
+            User user = userRepository.findById(id)
+                    .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
-        // STEG 5: RADERA användaren (nu finns inga Foreign Key Constraints)
-        userRepository.delete(user);
-        System.out.println("✅ Användare raderad: " + user.getEmail() + " (ID: " + id + ")");
-        System.out.println("✅ CASCADE DELETE GENOMFÖRD");
-        
-    } catch (Exception e) {
-        System.err.println("❌ CASCADE DELETE FAILED för user ID: " + id);
-        System.err.println("❌ Exception: " + e.getClass().getName());
-        System.err.println("❌ Message: " + e.getMessage());
-        e.printStackTrace();
-        throw e; // Re-throw för att GlobalExceptionHandler ska fånga
+            log.info("Initiating cascade delete for user ID: {} ({})", id, user.getEmail());
+
+            // DEBUG: Kolla om WebClient är injected
+            if (paymentServiceWebClient == null) {
+                log.error("FATAL: paymentServiceWebClient is NULL! UserService may need restart");
+                throw new RuntimeException("WebClient is not configured. Restart UserService.");
+            }
+
+            // STEG 2: RADERA alla subscriptions (UserService DB)
+            List<Subscription> subscriptions = subscriptionRepository.findByUserId(id);
+            if (!subscriptions.isEmpty()) {
+                subscriptionRepository.deleteAll(subscriptions);
+                log.info("Deleted {} subscriptions for user ID: {}", subscriptions.size(), id);
+            }
+
+            // STEG 3: RADERA alla login tokens (UserService DB)
+            List<LoginToken> tokens = loginTokenRepository.findByEmail(user.getEmail());
+            if (!tokens.isEmpty()) {
+                loginTokenRepository.deleteAll(tokens);
+                log.info("Deleted {} login tokens for user: {}", tokens.size(), user.getEmail());
+            }
+
+            // STEG 4: ANROPA PaymentService för att radera payments (PaymentService DB)
+            try {
+                log.info("Calling PaymentService to delete payments for user ID: {}", id);
+
+                String response = paymentServiceWebClient
+                        .delete()
+                        .uri("/api/admin/payments/users/" + id)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
+
+                log.info("Payments deleted in PaymentService for user ID: {}", id);
+
+            } catch (Exception e) {
+                // Logga fel men fortsätt (fail-safe approach)
+                log.warn("Could not delete payments in PaymentService for user ID: {}. Continuing with user deletion.",
+                        id, e);
+            }
+
+            // STEG 5: RADERA användaren (nu finns inga Foreign Key Constraints)
+            userRepository.delete(user);
+            log.info("User deleted successfully: {} (ID: {})", user.getEmail(), id);
+            log.info("CASCADE DELETE COMPLETED for user ID: {}", id);
+
+        } catch (Exception e) {
+            log.error("CASCADE DELETE FAILED for user ID: {}", id, e);
+            throw e; // Re-throw för att GlobalExceptionHandler ska fånga
+        }
     }
-}
 
     // ==========================================
     // STATISTIK & ALIAS-METODER
