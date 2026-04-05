@@ -16,13 +16,15 @@ import org.springframework.context.annotation.Configuration;
  * att det finns test-användare i systemet.
  * 
  * Dessa användare får automatiskt aktiv prenumeration via PaymentSeeder.
+ * 
+ * INAKTIVERAD: Kommentera in @Bean för att aktivera test-användare
  */
 @Configuration
 public class UserSeeder {
 
     private static final Logger logger = LoggerFactory.getLogger(UserSeeder.class);
 
-    @Bean
+    // @Bean
     CommandLineRunner initTestUsers(UserRepository userRepository) {
         return args -> {
             logger.info("🌱 Checking for test users...");
