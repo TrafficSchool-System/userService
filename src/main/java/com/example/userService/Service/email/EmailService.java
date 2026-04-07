@@ -25,7 +25,7 @@ public class EmailService implements EmailServiceInterface {
     @Value("${sendgrid.from.name}")
     private String fromName;
 
-    @Value("${MAGIC_LINK_BASE_URL:http://localhost:5173}")
+    @Value("${FRONTEND_URL:http://localhost:5173}")
     private String frontendBaseUrl;
 
     @Override
