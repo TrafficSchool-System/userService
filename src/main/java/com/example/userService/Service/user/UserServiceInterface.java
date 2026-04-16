@@ -2,6 +2,7 @@ package com.example.userService.Service.user;
 
 import java.util.List;
 
+import com.example.userService.Dto.CreateUserByAdminDTO;
 import com.example.userService.Dto.RegisterRequestDTO;
 import com.example.userService.Dto.UpdateUserRequestDTO;
 import com.example.userService.Dto.UserResponseDTO;
@@ -20,8 +21,11 @@ public interface UserServiceInterface {
     // Ny metod: Registrera användare och skicka välkomstbrev
     UserResponseDTO registerUserWithWelcomeEmail(RegisterRequestDTO request);
 
+    // Skapa användare (admin operation) - skickar magic link email
+    UserResponseDTO createUserByAdmin(CreateUserByAdminDTO request);
+
     // Hämtar en användare baserat på email
-    // Email den mail addressen som ska sökas efter
+    // Email den mail addressen som ska sökas after
     // UserResponseDTO med användarens information. Eller null eception om inget
     // hittas
     UserResponseDTO findByEmail(String email);

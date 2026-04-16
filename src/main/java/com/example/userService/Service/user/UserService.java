@@ -3,6 +3,7 @@ package com.example.userService.Service.user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.example.userService.Dto.CreateUserByAdminDTO;
 import com.example.userService.Dto.RegisterRequestDTO;
 import com.example.userService.Dto.UpdateUserRequestDTO;
 import com.example.userService.Dto.UserResponseDTO;
@@ -102,6 +103,56 @@ public class UserService implements UserServiceInterface {
         emailService.sendWelcomeEmail(user.getEmail(), user.getFirstName(), token);
 
         return user;
+    }
+
+    /**
+     * SKAPA ANVÄNDARE (ADMIN OPERATION)
+     * Admin endpoint för att skapa användare manuellt.
+     * Skapar användare OCH skickar magic link email för att sätta lösenord.
+     * 
+     * ANVÄNDS AV: AdminService när admin skapar användare + prenumeration
+     */
+    @Override
+    public UserResponseDTO createUserByAdmin(CreateUserByAdminDTO request) {
+        log.info("🔧 Admin creating user: {}", request.getEmail());
+
+        // Validera att email inte redan finns
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new EmailAllreadyExistsException("Email already registered: " + request.getEmail());
+        }
+
+        // Validera personnummer om det finns
+        if (request.getPersonalNumber() != null && !request.getPersonalNumber().isEmpty()) {
+            if (userRepository.existsByPersonalNumber(request.getPersonalNumber())) {
+                throw new PersonalNumberAlreadyExistsException(
+                        "Personal number already registered: " + request.getPersonalNumber());
+            }
+        }
+
+        // Skapa användare från admin request
+        User user = new User(
+                request.getEmail(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getPersonalNumber(),
+                request.getPhoneNumber());
+
+        // Spara i databas
+        User savedUser = userRepository.save(user);
+        log.info("✅ User created by admin: {} (ID: {})", savedUser.getEmail(), savedUser.getId());
+
+        // Skapa magic link token
+        String token = createWelcomeToken(savedUser.getEmail());
+
+        // Skicka magic link email
+        emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName(), token);
+        log.info("📧 Magic link email sent to: {}", savedUser.getEmail());
+
+        // Konvertera till DTO och returnera
+        UserResponseDTO dto = new UserResponseDTO(savedUser);
+        dto.setHasActiveSubscription(false); // Ingen prenumeration än
+
+        return dto;
     }
 
     /**
