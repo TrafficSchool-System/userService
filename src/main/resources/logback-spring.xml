@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ============================================================
+         LOGBACK CONFIGURATION — UserService
+         Profiles:
+           local  → colored console, DEBUG level, SQL visible
+           prod   → plain console, INFO level, no sensitive data
+    ============================================================ -->
+
+    <!-- ── Shared properties ── -->
+    <property name="LOG_PATTERN_PLAIN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="LOG_PATTERN_COLOR"
+              value="%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%logger{36}) - %msg%n"/>
+
+    <!-- ================================================================
+         LOCAL / DEVELOPMENT profile
+         - Colored output
+         - DEBUG level for application code
+         - Shows Spring Security and Hibernate SQL
+    ================================================================ -->
+    <springProfile name="local">
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN_COLOR}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <!-- Application code: DEBUG -->
+        <logger name="com.example.userService" level="DEBUG"/>
+
+        <!-- Spring Web: INFO (reduce noise, set DEBUG if needed) -->
+        <logger name="org.springframework.web" level="INFO"/>
+
+        <!-- Spring Security: DEBUG in local to trace auth flow -->
+        <logger name="org.springframework.security" level="DEBUG"/>
+
+        <!-- Hibernate SQL: DEBUG (shows queries) -->
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+
+        <!-- Suppress Hibernate parameter binding TRACE noise unless needed -->
+        <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+
+        <!-- Eureka client: WARN (very noisy at INFO) -->
+        <logger name="com.netflix.eureka" level="WARN"/>
+        <logger name="com.netflix.discovery" level="WARN"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+    </springProfile>
+
+    <!-- ================================================================
+         PRODUCTION profile (railway / docker / k8s)
+         - Plain text output (Railway captures stdout)
+         - INFO level for application code
+         - No SQL logging
+         - No Spring Security debug
+    ================================================================ -->
+    <springProfile name="railway,prod,production">
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN_PLAIN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <!-- Application code: INFO -->
+        <logger name="com.example.userService" level="INFO"/>
+
+        <!-- Spring: WARN (suppress framework noise) -->
+        <logger name="org.springframework" level="WARN"/>
+
+        <!-- No SQL in production -->
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.hibernate.type" level="WARN"/>
+
+        <!-- Eureka: WARN -->
+        <logger name="com.netflix" level="WARN"/>
+
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+    </springProfile>
+
+</configuration>
