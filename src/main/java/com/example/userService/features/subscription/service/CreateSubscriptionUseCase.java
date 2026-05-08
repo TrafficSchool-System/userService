@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * CREATE SUBSCRIPTION USE CASE
  * 
@@ -64,6 +66,24 @@ public class CreateSubscriptionUseCase {
         if (subscriptionRepository.findByPaymentId(request.getPaymentId()).isPresent()) {
             log.warn("Subscription already exists for paymentId={}", request.getPaymentId());
             throw new SubscriptionAlreadyExistsException(request.getPaymentId());
+        }
+
+        // EXTEND: If user already has an active subscription, extend it instead of
+        // creating a new one
+        Optional<Subscription> existingActive = subscriptionRepository
+                .findByUserIdAndCancelledFalse(request.getUserId())
+                .stream()
+                .filter(Subscription::isActive)
+                .findFirst();
+
+        if (existingActive.isPresent()) {
+            Subscription subscription = existingActive.get();
+            subscription.setEndDate(subscription.getEndDate().plusHours(request.getValidityHours()));
+            subscription.setPaymentId(request.getPaymentId()); // Update for future deduplication check
+            Subscription saved = subscriptionRepository.save(subscription);
+            log.info("Subscription extended: ID={}, userId={}, newEndDate={}",
+                    saved.getId(), saved.getUserId(), saved.getEndDate());
+            return new SubscriptionResponseDTO(saved);
         }
 
         // CREATE: New subscription from request

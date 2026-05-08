@@ -94,7 +94,7 @@ public class VerifyMagicLinkUseCase {
                 hasActiveSubscription);
 
         log.info("Magic link verified successfully for userId={} hasActiveSubscription={}",
-                authContext.userId(), hasActiveSubscription);
+                authContext.id(), hasActiveSubscription);
 
         return authContext;
     }

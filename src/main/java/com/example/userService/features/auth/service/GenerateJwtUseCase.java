@@ -51,9 +51,9 @@ public class GenerateJwtUseCase {
         String jwtToken = jwtUtil.generateToken(
                 authContext.email(),
                 authContext.role(),
-                authContext.userId());
+                authContext.id());
 
-        log.info("JWT generated successfully for user: {} (ID: {})", authContext.email(), authContext.userId());
+        log.info("JWT generated successfully for user: {} (ID: {})", authContext.email(), authContext.id());
 
         // Return complete response with token and auth context
         return new JwtResponseDTO(jwtToken, authContext);

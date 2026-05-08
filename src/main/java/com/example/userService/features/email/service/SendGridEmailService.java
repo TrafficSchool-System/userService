@@ -79,9 +79,11 @@ public final class SendGridEmailService implements EmailServiceInterface {
             Response response = sg.api(request);
 
             if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
-                log.debug("✅ SendGrid: API response: {}", response.getStatusCode());
+                log.debug("SendGrid response: {}", response.getStatusCode());
             } else {
-                log.warn("⚠️ SendGrid: API responded with status {}: {}", response.getStatusCode(), response.getBody());
+                log.error("SendGrid API error status={} body={}", response.getStatusCode(), response.getBody());
+                throw new RuntimeException(
+                        "SendGrid returned status " + response.getStatusCode() + ": " + response.getBody());
             }
         } catch (IOException e) {
             log.error("❌ SendGrid: API error: {}", e.getMessage());
