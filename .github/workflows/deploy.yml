@@ -36,7 +36,7 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.APP_NAME }}:latest
 
-      - name: DriftsÃ¤tt till Azure Container Apps
+      - name: Driftsätt till Azure Container Apps
         run: |
           az containerapp up \
             --name ${{ env.APP_NAME }} \
@@ -48,17 +48,4 @@ jobs:
             --registry-password ${{ secrets.ACR_PASSWORD }} \
             --target-port 8081 \
             --ingress internal \
-            --env-vars \
-              SPRING_PROFILES_ACTIVE=prod \
-              MYSQLHOST=${{ secrets.MYSQL_HOST }} \
-              MYSQLPORT=3306 \
-              MYSQLDATABASE=userServiceDb \
-              MYSQLUSER=${{ secrets.MYSQL_USER }} \
-              MYSQLPASSWORD=${{ secrets.MYSQL_PASSWORD }} \
-              JWT_SECRET=${{ secrets.JWT_SECRET }} \
-              SERVICE_API_KEY=${{ secrets.SERVICE_API_KEY }} \
-              SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }} \
-              SENDGRID_FROM_EMAIL=${{ secrets.SENDGRID_FROM_EMAIL }} \
-              SENDGRID_FROM_NAME=${{ secrets.SENDGRID_FROM_NAME }} \
-              FRONTEND_URL=${{ secrets.FRONTEND_URL }} \
-              EUREKA_URL=http://eureka-server/eureka/
+            --env-vars "SPRING_PROFILES_ACTIVE=prod" "MYSQLHOST=${{ secrets.MYSQL_HOST }}" "MYSQLPORT=3306" "MYSQLDATABASE=userServiceDb" "MYSQLUSER=${{ secrets.MYSQL_USER }}" "MYSQLPASSWORD=${{ secrets.MYSQL_PASSWORD }}" "JWT_SECRET=${{ secrets.JWT_SECRET }}" "SERVICE_API_KEY=${{ secrets.SERVICE_API_KEY }}" "SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}" "SENDGRID_FROM_EMAIL=${{ secrets.SENDGRID_FROM_EMAIL }}" "SENDGRID_FROM_NAME=${{ secrets.SENDGRID_FROM_NAME }}" "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" "EUREKA_URL=http://eureka-server/eureka/"
