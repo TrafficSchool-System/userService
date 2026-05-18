@@ -17,12 +17,12 @@ jobs:
       - name: Checkout kod
         uses: actions/checkout@v4
 
-      - name: Logga in på Azure
+      - name: Logga in pÃ¥ Azure
         uses: azure/login@v3
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
-      - name: Logga in på ACR
+      - name: Logga in pÃ¥ ACR
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
@@ -36,7 +36,7 @@ jobs:
           push: true
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.APP_NAME }}:latest
 
-      - name: Driftsätt till Azure Container Apps
+      - name: DriftsÃ¤tt till Azure Container Apps
         run: |
           az containerapp up \
             --name ${{ env.APP_NAME }} \
@@ -48,8 +48,6 @@ jobs:
             --registry-password ${{ secrets.ACR_PASSWORD }} \
             --target-port 8081 \
             --ingress internal \
-            --min-replicas 1 \
-            --max-replicas 2 \
             --env-vars \
               SPRING_PROFILES_ACTIVE=prod \
               MYSQLHOST=${{ secrets.MYSQL_HOST }} \
