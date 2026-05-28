@@ -91,7 +91,10 @@ public class SecurityConfig {
                                                                 "/api/auth/login", // Request magic link
                                                                 "/api/auth/verify", // Verify token (basic)
                                                                 "/api/auth/tokens", // Verify token and get JWT
-                                                                "/api/users/test-auth" // DEBUG endpoint
+                                                                "/api/users/test-auth", // DEBUG endpoint
+                                                                "/actuator/health", // Health probe (Azure Container
+                                                                                    // Apps)
+                                                                "/actuator/info" // Info endpoint
                                                 ).permitAll()
 
                                                 // User registration - only POST is public
