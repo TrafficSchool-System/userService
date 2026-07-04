@@ -27,13 +27,16 @@ public class WebClientConfig {
     @Value("${service.api.key}")
     private String serviceApiKey;
 
+    @Value("${payment-service.base-url}")
+    private String paymentServiceBaseUrl;
+
     @Bean
     public WebClient paymentServiceWebClient() {
         HttpClient httpClient = HttpClient.create()
                 .responseTimeout(Duration.ofSeconds(8));
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .baseUrl("http://payment-service")
+            .baseUrl(paymentServiceBaseUrl)
                 .defaultHeader("X-Internal-Source", "user-service")
                 .defaultHeader("X-Internal-API-Key", serviceApiKey)
                 .build();

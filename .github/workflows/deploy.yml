@@ -17,12 +17,12 @@ jobs:
       - name: Checkout kod
         uses: actions/checkout@v4
 
-      - name: Logga in pÃ¥ Azure
+      - name: Logga in på Azure
         uses: azure/login@v3
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
-      - name: Logga in pÃ¥ ACR
+      - name: Logga in på ACR
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
@@ -48,7 +48,7 @@ jobs:
             --registry-password ${{ secrets.ACR_PASSWORD }} \
             --target-port 8081 \
             --ingress internal \
-            --env-vars "SPRING_PROFILES_ACTIVE=prod" "MYSQLHOST=${{ secrets.MYSQL_HOST }}" "MYSQLPORT=3306" "MYSQLDATABASE=userServiceDb" "MYSQLUSER=${{ secrets.MYSQL_USER }}" "MYSQLPASSWORD=${{ secrets.MYSQL_PASSWORD }}" "JWT_SECRET=${{ secrets.JWT_SECRET }}" "SERVICE_API_KEY=${{ secrets.SERVICE_API_KEY }}" "SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}" "SENDGRID_FROM_EMAIL=${{ secrets.SENDGRID_FROM_EMAIL }}" "SENDGRID_FROM_NAME=${{ secrets.SENDGRID_FROM_NAME }}" "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" "EUREKA_URL=http://eureka-server/eureka/"
+            --env-vars "SPRING_PROFILES_ACTIVE=prod" "MYSQLHOST=${{ secrets.MYSQL_HOST }}" "MYSQLPORT=3306" "MYSQLDATABASE=userServiceDb" "MYSQLUSER=${{ secrets.MYSQL_USER }}" "MYSQLPASSWORD=${{ secrets.MYSQL_PASSWORD }}" "JWT_SECRET=${{ secrets.JWT_SECRET }}" "SERVICE_API_KEY=${{ secrets.SERVICE_API_KEY }}" "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" "RESEND_FROM_EMAIL=${{ secrets.RESEND_FROM_EMAIL }}" "RESEND_FROM_NAME=${{ secrets.RESEND_FROM_NAME }}" "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" "EUREKA_URL=http://eureka-server/eureka/" "welcome.email.fail-on-error=false"
 
       - name: Sätt minimum 1 replik (förhindra scale-to-zero)
         run: |

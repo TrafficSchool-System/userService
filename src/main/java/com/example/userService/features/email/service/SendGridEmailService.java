@@ -1,26 +1,30 @@
 package com.example.userService.features.email.service;
 
-import com.sendgrid.*;
-import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.objects.Content;
-import com.sendgrid.helpers.mail.objects.Email;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * SendGrid Email Service - Pure Infrastructure Adapter
+ * Resend Email Service - Pure Infrastructure Adapter
  * 
- * This is a pure infrastructure service - SendGrid API wrapper ONLY.
+ * This is a pure infrastructure service - Resend API wrapper ONLY.
  * Contains NO business logic, NO email type decisions, NO HTML generation.
  * 
  * Responsibilities:
- * - Send emails via SendGrid API
- * - Handle SendGrid API errors
- * - Configure SendGrid client
+ * - Send emails via Resend API
+ * - Handle Resend API errors
+ * - Configure HTTP client
  * 
  * NOT responsible for:
  * - Building email content (use-case responsibility)
@@ -36,21 +40,28 @@ public final class SendGridEmailService implements EmailServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(SendGridEmailService.class);
 
-    private final String sendGridApiKey;
+    private static final String RESEND_API_URL = "https://api.resend.com/emails";
+
+    private final String resendApiKey;
     private final String fromEmail;
     private final String fromName;
+    private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
 
     public SendGridEmailService(
-            @Value("${sendgrid.api.key}") String sendGridApiKey,
-            @Value("${sendgrid.from.email}") String fromEmail,
-            @Value("${sendgrid.from.name}") String fromName) {
-        this.sendGridApiKey = sendGridApiKey;
+            @Value("${resend.api.key:${sendgrid.api.key:}}") String resendApiKey,
+            @Value("${resend.from.email:${sendgrid.from.email:noreply@trafficschool.com}}") String fromEmail,
+            @Value("${resend.from.name:${sendgrid.from.name:Traffic School}}") String fromName,
+            ObjectMapper objectMapper) {
+        this.resendApiKey = resendApiKey;
         this.fromEmail = fromEmail;
         this.fromName = fromName;
+        this.objectMapper = objectMapper;
+        this.httpClient = HttpClient.newHttpClient();
     }
 
     /**
-     * Send email via SendGrid.
+    * Send email via Resend.
      * 
      * Pure infrastructure operation - delegates to SendGrid API.
      * No business logic, no HTML generation, no content decisions.
@@ -61,33 +72,54 @@ public final class SendGridEmailService implements EmailServiceInterface {
      */
     @Override
     public void sendEmail(String to, String subject, String htmlContent) {
-        log.debug("📤 SendGrid: Sending email to: {} with subject: {}", to, subject);
+        log.debug("📤 Resend: Sending email to: {} with subject: {}", to, subject);
 
-        Email from = new Email(fromEmail, fromName);
-        Email toEmail = new Email(to);
-        Content content = new Content("text/html", htmlContent);
-        Mail mail = new Mail(from, subject, toEmail, content);
-
-        SendGrid sg = new SendGrid(sendGridApiKey);
-        Request request = new Request();
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            throw new RuntimeException("resend.api.key is missing");
+        }
 
         try {
-            request.setMethod(Method.POST);
-            request.setEndpoint("mail/send");
-            request.setBody(mail.build());
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("from", formatFromField());
+            payload.put("to", List.of(to));
+            payload.put("subject", subject);
+            payload.put("html", htmlContent);
 
-            Response response = sg.api(request);
+            String requestBody = objectMapper.writeValueAsString(payload);
 
-            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
-                log.debug("SendGrid response: {}", response.getStatusCode());
+            HttpRequest request = HttpRequest.newBuilder(URI.create(RESEND_API_URL))
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.debug("Resend response: {}", response.statusCode());
             } else {
-                log.error("SendGrid API error status={} body={}", response.getStatusCode(), response.getBody());
+                log.error("Resend API error status={} body={}", response.statusCode(), response.body());
                 throw new RuntimeException(
-                        "SendGrid returned status " + response.getStatusCode() + ": " + response.getBody());
+                        "Resend returned status " + response.statusCode() + ": " + response.body());
             }
         } catch (IOException e) {
-            log.error("❌ SendGrid: API error: {}", e.getMessage());
-            throw new RuntimeException("Failed to send email via SendGrid", e);
+            log.error("❌ Resend: API error: {}", e.getMessage());
+            throw new RuntimeException("Failed to send email via Resend", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Email sending interrupted", e);
         }
+    }
+
+    private String formatFromField() {
+        if (fromEmail == null || fromEmail.isBlank()) {
+            throw new RuntimeException("resend.from.email is missing");
+        }
+
+        if (fromEmail.contains("<") && fromEmail.contains(">")) {
+            return fromEmail;
+        }
+
+        return fromName + " <" + fromEmail + ">";
     }
 }

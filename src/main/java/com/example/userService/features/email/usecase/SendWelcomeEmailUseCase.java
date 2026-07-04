@@ -30,12 +30,15 @@ public class SendWelcomeEmailUseCase {
 
     private final EmailServiceInterface emailService;
     private final String frontendBaseUrl;
+    private final boolean failOnError;
 
     public SendWelcomeEmailUseCase(
             EmailServiceInterface emailService,
-            @Value("${FRONTEND_URL:http://localhost:5173}") String frontendBaseUrl) {
+            @Value("${FRONTEND_URL:http://localhost:5173}") String frontendBaseUrl,
+            @Value("${welcome.email.fail-on-error:true}") boolean failOnError) {
         this.emailService = emailService;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.failOnError = failOnError;
     }
 
     /**
@@ -63,7 +66,11 @@ public class SendWelcomeEmailUseCase {
             log.info("✅ Welcome email sent successfully to: {}", email);
         } catch (Exception e) {
             log.error("❌ Failed to send welcome email to: {}", email, e);
-            throw new RuntimeException("Failed to send welcome email to " + email, e);
+            if (failOnError) {
+                throw new RuntimeException("Failed to send welcome email to " + email, e);
+            }
+
+            log.warn("⚠️ Continuing without welcome email delivery for {} (welcome.email.fail-on-error=false)", email);
         }
     }
 }
