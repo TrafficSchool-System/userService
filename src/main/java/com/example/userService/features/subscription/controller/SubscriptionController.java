@@ -1,6 +1,7 @@
 package com.example.userService.features.subscription.controller;
 
 import com.example.userService.features.subscription.dto.CreateSubscriptionRequestDTO;
+import com.example.userService.features.subscription.dto.ExtendSubscriptionRequestDTO;
 import com.example.userService.features.subscription.dto.SubscriptionResponseDTO;
 import com.example.userService.features.subscription.service.*;
 import com.example.userService.shared.security.CustomUserAuthentication;
@@ -56,18 +57,21 @@ public class SubscriptionController {
         private final GetUserSubscriptionsUseCase getUserSubscriptionsUseCase;
         private final GetActiveUserSubscriptionsUseCase getActiveUserSubscriptionsUseCase;
         private final GetSubscriptionByIdUseCase getSubscriptionByIdUseCase;
+        private final ExtendSubscriptionUseCase extendSubscriptionUseCase; 
 
         public SubscriptionController(
                         OwnershipAuthorizer ownershipAuthorizer,
                         CreateSubscriptionUseCase createSubscriptionUseCase,
                         GetUserSubscriptionsUseCase getUserSubscriptionsUseCase,
                         GetActiveUserSubscriptionsUseCase getActiveUserSubscriptionsUseCase,
-                        GetSubscriptionByIdUseCase getSubscriptionByIdUseCase) {
+                        GetSubscriptionByIdUseCase getSubscriptionByIdUseCase, 
+                        ExtendSubscriptionUseCase extendSubscriptionUseCase) {
                 this.ownershipAuthorizer = ownershipAuthorizer;
                 this.createSubscriptionUseCase = createSubscriptionUseCase;
                 this.getUserSubscriptionsUseCase = getUserSubscriptionsUseCase;
                 this.getActiveUserSubscriptionsUseCase = getActiveUserSubscriptionsUseCase;
                 this.getSubscriptionByIdUseCase = getSubscriptionByIdUseCase;
+                this.extendSubscriptionUseCase = extendSubscriptionUseCase; 
         }
 
         /**
@@ -188,4 +192,23 @@ public class SubscriptionController {
 
                 return ResponseEntity.ok(subscription);
         }
+
+        /**
+         * EXTEND SUBSCRIPTION (Admin only)
+         * Put /api/subscriptions/extend
+         * 
+         * SECURITY:
+         * - Only Admin and INTERNAL_SERVICE
+         */
+
+        @PreAuthorize("hasAnyRole('ADMIN', 'INTERNAL_SERVICE')")
+        @PutMapping("/extend")
+        public ResponseEntity<SubscriptionResponseDTO> extendSubscription(
+                @Valid @RequestBody ExtendSubscriptionRequestDTO request) {
+
+                        log.info("Admin extending subscription for userId={}",request.getUserId());
+                        SubscriptionResponseDTO result = extendSubscriptionUseCase.execute(request); 
+                        return ResponseEntity.ok(result); 
+
+                }
 }
